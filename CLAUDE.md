@@ -41,7 +41,8 @@ when in doubt, ask "how did Syndicate do it?" before inventing a new system.
 | `present.ts` | per-frame instance upload and the 2D overlay |
 | `main.ts` | frame loop, opening sequence, boot, `window.__wetwire` |
 | `terminal/term.ts` | new terminal: immediate-mode character grid and WebGL CRT pass |
-| `terminal/art.ts`, `terminal/logo.ts` | game art to phosphor bitmap; the spinning Kessel logo |
+| `terminal/doll.ts` | the agent figure as pixels, built from an `AgentLook` (face, hair, skin, mods) |
+| `terminal/art.ts`, `terminal/logo.ts` | weapon icons to phosphor bitmap; the spinning Kessel logo |
 
 ## Publishing
 
@@ -59,14 +60,14 @@ node ../bleep-kit/packages/cli/src/index.ts analyze <id> --project audio   # ren
 node ../bleep-kit/packages/cli/src/index.ts export --project audio          # writes audio/export/*.ogg
 ```
 
-Commit the exported `.ogg` files; the build only copies them. Sound made elsewhere goes in `audio/generated/`, which Bleepkit never touches: the theme (`theme.ogg`) is an ElevenLabs track, leveled to about -18 LUFS like the rest of the music, with its 50s intro played once and 50 to 110s looped (`SONGS` in `src/engine.ts`). A new sound also needs its name in `SFXN`
+Commit the exported `.ogg` files; the build only copies them. Sound made elsewhere goes in `audio/generated/`, which Bleepkit never touches: the theme (`theme.ogg`) is an ElevenLabs track, leveled to about -18 LUFS like the rest of the music, looping 7 to 164s, with its end blended into the opening (`SONGS` in `src/engine.ts`). The owner wants it slow, cold and synth-led, changing through arrangement rather than energy: a short repeating drum loop got grating, and bright, busy drums made it sound like a rock song. A new sound also needs its name in `SFXN`
 in `src/engine.ts`. The owner dislikes bell-like and laser-like timbres in music, and constant beeps.
 
 ## Art
 
 Weapon and gear icons: `python3 scripts/icons.py add <image.png> <id>` imports upscaled pixel art (e.g.
 512x256 at 4x on transparency) as icon `<id>` and regenerates `src/icons.ts`. `<id>` is the `WEAPONS` or
-`GEAR` key. Sources for the agent figure are in `art/doll/`.
+`GEAR` key. The agent figure is pixel data in `art/doll/m.px` and `f.px`: one character per pixel, space for transparent, 0 to 5 for brightness. Edit those directly; `node scripts/doll.mjs` regenerates them from the PNGs and overwrites edits. `src/terminal/doll.ts` draws the face, hair and cyborg mods over the body from an `AgentLook`, so add options there. Never convert images to characters: ASCII is only for things drawn as ASCII, like the logo.
 
 ## Conventions
 

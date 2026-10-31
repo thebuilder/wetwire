@@ -25,15 +25,7 @@ export function toLuma(src: CanvasImageSource, w: number, h: number, gamma = 0.7
   return { w, h, l, a };
 }
 
-/** Largest cell rectangle that keeps the art's proportions inside r, centred. */
-export function fitArt(m: Luma, r: Rect, t: Term): Rect {
-  const ar = (m.w / m.h) * (t.ch / t.cw);
-  let w = r.w, h = Math.round(w / ar);
-  if (h > r.h) { h = r.h; w = Math.round(h * ar); }
-  return { x: r.x + Math.floor((r.w - w) / 2), y: r.y + Math.floor((r.h - h) / 2), w, h };
-}
-
-/** A dithered bitmap with the brightness in the hue's colour channel, ready for Term.image(). */
+/** A dithered bitmap with the brightness in the hue's colour channel, ready for Term.pixels(). */
 export function phosphorBitmap(m: Luma, hue: Hue = 0, levels = 5) {
   const c = document.createElement('canvas'); c.width = m.w; c.height = m.h;
   const g = c.getContext('2d')!, im = g.createImageData(m.w, m.h), o = im.data;
@@ -49,10 +41,10 @@ export function phosphorBitmap(m: Luma, hue: Hue = 0, levels = 5) {
   return c;
 }
 
-/** Draws art fitted into an area. Bitmaps are cached on the Luma, one per hue. */
+/** Draws art inside an area, centred or against its top. Bitmaps are cached on the Luma, one per hue. */
 const cache = new WeakMap<Luma, Partial<Record<Hue, HTMLCanvasElement>>>();
-export function drawArt(t: Term, m: Luma, area: Rect, hue: Hue = 0) {
+export function drawArt(t: Term, m: Luma, area: Rect, hue: Hue = 0, top = false) {
   let by = cache.get(m);
   if (!by) cache.set(m, by = {});
-  t.image(fitArt(m, area, t), by[hue] || (by[hue] = phosphorBitmap(m, hue)));
+  t.pixels(area, by[hue] || (by[hue] = phosphorBitmap(m, hue)), top);
 }

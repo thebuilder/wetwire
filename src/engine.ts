@@ -200,7 +200,7 @@ export function nearestRoad(x, z) {
 /* ================================================================ audio */
 export const AU = { ctx: null, master: null, music: null, sfx: null, buf: {}, on: false, cur: null, src: null, gain: null, pending: null, loaded: false, act: {} };
 export const SONGS = {
-  theme: { g: 1.2, ls: 50, le: 110 }, infiltration: { g: 1.35, ls: 38.4, le: 76.8 },
+  theme: { g: 1.2, ls: 7, le: 164 }, infiltration: { g: 1.35, ls: 38.4, le: 76.8 },
   danger: { g: 1.0, ls: 25.6, le: 51.2 }, complete: { g: 1.15 }, failed: { g: 1.8 },
 };
 const SFXN = ['ack', 'siren', 'minigun', 'pistol', 'laser', 'rocket', 'explosion', 'mindjack', 'hack', 'ui', 'alarm', 'zap', 'impact', 'door', 'scream', 'flame', 'ignite'];

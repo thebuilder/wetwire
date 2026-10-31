@@ -1,3 +1,7 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
 <title>Wetwire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -486,6 +490,8 @@ button:focus-visible,.dose:focus-visible{outline:2px solid var(--amber);outline-
 }
 @media (prefers-reduced-motion:reduce){#log div{transition:none}}
 </style>
+</head>
+<body>
 
 <div id="app">
   <canvas id="gl" aria-label="Game view"></canvas>
@@ -577,7 +583,7 @@ button:focus-visible,.dose:focus-visible{outline:2px solid var(--amber);outline-
           <button class="btn ghost" id="sndBtn">SOUND: OFF</button>
         </div>
         <div id="bootErr" hidden></div>
-        <p class="note">Music and effects were composed in Bleepkit on its AdLib (OPL2) chip. Progress is saved in this browser.</p>
+        <p class="note">Progress is saved in this browser.</p>
       </div>
     </div>
   </div>
@@ -601,3 +607,5 @@ button:focus-visible,.dose:focus-visible{outline:2px solid var(--amber);outline-
   </div>
 </div>
 <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

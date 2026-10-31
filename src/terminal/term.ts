@@ -10,7 +10,7 @@ export interface Style { b?: number; inv?: boolean; u?: boolean; hue?: Hue }
 export interface Palette { phosphor: number[]; alert: number[]; accent: number[] }
 export type Bitmap = HTMLCanvasElement;
 interface Region extends Rect { id: string; on?: () => void }
-interface Blit extends Rect { src: Bitmap; b: number }
+interface Blit extends Rect { src: Bitmap; top: boolean }
 export type DrawFn = (t: Term, now: number) => void;
 
 export const PALETTES: Record<string, Palette> = {
@@ -175,13 +175,14 @@ export class Term {
   button(x: number, y: number, label: string, id: string, on: () => void, s: Style = {}) {
     const w = [...label].length, hot = this.hover === id;
     this.regions.push({ x, y, w, h: 1, id, on });
-    this.put(x, y, label, { b: s.b ?? 0.8, hue: s.hue, inv: s.inv !== hot, u: s.u });
+    this.put(x, y, label, { b: s.b ?? 0.8, hue: s.hue, inv: !!s.inv !== hot, u: s.u });
     return w;
   }
   /** Marks an area clickable without drawing, so a whole row or panel can respond. */
   region(r: Rect, id: string, on?: () => void) { this.regions.push({ ...r, id, on }); }
-  /** Draws a bitmap (from art.ts) over a cell rectangle. Its colour channels are read by hue, like the text. */
-  image(r: Rect, src: Bitmap, b = 1) { this.blits.push({ ...r, src, b }); }
+  /** Draws a bitmap inside a cell rectangle at a whole-number scale, so every source pixel stays square and crisp.
+   *  Centred, or against the rectangle's top. Its colour channels are read by hue, like the text. */
+  pixels(r: Rect, src: Bitmap, top = false) { this.blits.push({ ...r, src, top }); }
 
   wrap(text: string, w: number) {
     const out: string[] = [];
@@ -205,8 +206,13 @@ export class Term {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.font = this.font + 'px ' + FONT + ', monospace'; ctx.textBaseline = 'top';
     ctx.imageSmoothingEnabled = false;
-    for (const im of this.blits) { ctx.globalAlpha = im.b; ctx.drawImage(im.src, im.x * cw, im.y * ch, im.w * cw, im.h * ch); }
-    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const im of this.blits) {
+      const rw = im.w * cw * dpr, rh = im.h * ch * dpr, s = Math.max(1, Math.floor(Math.min(rw / im.src.width, rh / im.src.height)));
+      const dw = im.src.width * s, dh = im.src.height * s;
+      ctx.drawImage(im.src, Math.round(im.x * cw * dpr + (rw - dw) / 2), Math.round(im.y * ch * dpr + (im.top ? 0 : (rh - dh) / 2)), dw, dh);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const col = (hue: Hue, b: number) => { const v = Math.round(255 * b); return hue === 1 ? 'rgb(0,' + v + ',0)' : hue === 2 ? 'rgb(0,0,' + v + ')' : 'rgb(' + v + ',0,0)'; };
     for (let y = 0; y < this.rows; y++) {
       const row = this.cells[y];

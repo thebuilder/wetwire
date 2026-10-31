@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "laser",
+  "category": "laser",
+  "chip": "custom",
+  "seed": 1336693112,
+  "wave": "square",
+  "volume": 0.95,
+  "frequency": {
+    "start": 659.26,
+    "min": 0,
+    "slide": -3.993,
+    "deltaSlide": -0.521
+  },
+  "vibrato": {
+    "depth": 0.38,
+    "rate": 15.4
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0.009,
+    "sustain": 0.115,
+    "punch": 0.09,
+    "decay": 0.361
+  },
+  "duty": {
+    "start": 0.15,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 0.136,
+    "sweep": 0.103
+  },
+  "filter": {
+    "lowpass": null,
+    "lowpassSweep": 0,
+    "resonance": 0,
+    "highpass": 254,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "long"
+  },
+  "fm": null,
+  "table": null
+}

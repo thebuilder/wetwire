@@ -1,0 +1,99 @@
+{
+ "version": 1,
+ "name": "Danger (AdLib, E minor, 150 BPM)",
+ "chip": "adlib",
+ "tempo": 150,
+ "rowsPerBeat": 4,
+ "tickRate": 60,
+ "channels": [
+  {
+   "id": "fm1",
+   "kind": "fm",
+   "instrument": "saw-bass",
+   "volume": 0.85,
+   "pan": 0,
+   "muted": false,
+   "mml": "@saw-bass v15 o2 l16 q6 L [ [e e >e< e e e >d< e e e >e< e e g a b]2 k-4 e e >e< e e e >d< e e e >e< e e g a b k-2 e e >e< e e e >d< e e e >e< e e g a b k0 [e e >e< e e e >d< e e e >e< e e g a b]2 k1 [e e >e< e e e >d< e e e >e< e e g a b]2 k0 ]2"
+  },
+  {
+   "id": "fm2",
+   "kind": "fm",
+   "instrument": "opl-distortion-guitar",
+   "volume": 0.55,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-distortion-guitar v12 o3 L [r1]8 [e8. e16 r8 e8 r4 e8 e8]2 k-4 e8. e16 r8 e8 r4 e8 e8 k-2 e8. e16 r8 e8 r4 e8 e8 k0 [e8. e16 r8 e8 r4 e8 e8]2 k1 [e8. e16 r8 e8 r4 e8 e8]2 k0"
+  },
+  {
+   "id": "fm3",
+   "kind": "fm",
+   "instrument": "opl-distortion-guitar",
+   "volume": 0.45,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-distortion-guitar v12 o3 L [r1]8 [b8. b16 r8 b8 r4 b8 b8]2 k-4 b8. b16 r8 b8 r4 b8 b8 k-2 b8. b16 r8 b8 r4 b8 b8 k0 [b8. b16 r8 b8 r4 b8 b8]2 k1 [b8. b16 r8 b8 r4 b8 b8]2 k0"
+  },
+  {
+   "id": "fm4",
+   "kind": "fm",
+   "instrument": "opl-metal-lead",
+   "volume": 0.6,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-metal-lead v13 o5 L [r1]8 e4 g8 a8 b4 a8 g8 f+4 e8 d8 e2 c4 e8 g8 a4 g8 e8 d4 f+8 a8 b2 e4 g8 a8 b4 >d8< b8 a4 g8 f+8 g4 e4 f4 a8 >c8< b4 a8 f8 e1"
+  },
+  {
+   "id": "fm5",
+   "kind": "fm",
+   "instrument": "dark-pluck",
+   "volume": 0.5,
+   "pan": 0,
+   "muted": false,
+   "mml": "@dark-pluck v12 o4 L [[e16 b16 >e16< b16]4]2 k-4 [e16 b16 >e16< b16]4 k-2 [e16 b16 >e16< b16]4 k0 [[e16 b16 >e16< b16]4]2 k1 [[e16 b16 >e16< b16]4]2 k0 [r1]8"
+  },
+  {
+   "id": "fm6",
+   "kind": "fm",
+   "instrument": "soft-hat",
+   "volume": 0.5,
+   "pan": 0,
+   "muted": false,
+   "mml": "@soft-hat o3 l16 L [v9 c v6 c v12 c v6 c]64"
+  },
+  {
+   "id": "fm7",
+   "kind": "fm",
+   "instrument": "opl-kick",
+   "volume": 0.85,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-kick v15 o3 L [c8 r16 c16 r4 c8 c8 r4]16"
+  },
+  {
+   "id": "fm8",
+   "kind": "fm",
+   "instrument": "opl-snare",
+   "volume": 0.7,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-snare o3 l16 L [ v14 [r4 c4 r4 c4]7 r4 c4 v10 c c v11 c c v12 c c v14 c c ]2"
+  },
+  {
+   "id": "fm9",
+   "kind": "fm",
+   "instrument": "opl-crash",
+   "volume": 0.45,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-crash v12 o3 L [c1 [r1]7]2"
+  }
+ ],
+ "patterns": {},
+ "order": [],
+ "loop": null,
+ "master": {
+  "volume": 1.0,
+  "echo": null,
+  "reverb": null
+ }
+}

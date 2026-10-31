@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "scream",
+  "category": "custom",
+  "chip": "custom",
+  "seed": 4411,
+  "wave": "saw",
+  "volume": 0.42,
+  "frequency": {
+    "start": 820,
+    "min": 0,
+    "slide": -0.7,
+    "deltaSlide": -0.9
+  },
+  "vibrato": {
+    "depth": 0.9,
+    "rate": 11
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0.04,
+    "sustain": 0.32,
+    "punch": 0.15,
+    "decay": 0.4
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 1.6,
+    "sweep": -1.5
+  },
+  "filter": {
+    "lowpass": 2100,
+    "lowpassSweep": 0,
+    "resonance": 0.35,
+    "highpass": 380,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 2
+  },
+  "noise": {
+    "mode": "long"
+  },
+  "fm": null,
+  "table": null
+}

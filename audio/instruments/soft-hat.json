@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "name": "Soft hat (noisy FM, below Nyquist)",
+  "kind": "fm",
+  "chip": "adlib",
+  "volume": 0.75,
+  "envelope": {
+    "attack": 0,
+    "decay": 0.035,
+    "sustain": 0,
+    "release": 0.02
+  },
+  "macros": {
+    "volume": {
+      "values": [
+        0.9,
+        0.45,
+        0.18,
+        0.05,
+        0
+      ],
+      "loop": -1,
+      "release": -1
+    },
+    "arpeggio": {
+      "values": [
+        86
+      ],
+      "loop": -1,
+      "release": -1
+    },
+    "arpeggioMode": "fixed"
+  },
+  "fm": {
+    "algorithm": 0,
+    "feedback": 7,
+    "lfo": null,
+    "ops": [
+      {
+        "mult": 7,
+        "detune": 0,
+        "level": 1,
+        "attack": 31,
+        "decay": 0,
+        "sustainLevel": 1,
+        "sustainRate": 0,
+        "release": 15,
+        "keyScale": 0,
+        "waveform": 0,
+        "fixedHz": null
+      },
+      {
+        "mult": 5,
+        "detune": 0,
+        "level": 1,
+        "attack": 31,
+        "decay": 18,
+        "sustainLevel": 0,
+        "sustainRate": 0,
+        "release": 15,
+        "keyScale": 0,
+        "waveform": 0,
+        "fixedHz": null
+      }
+    ]
+  }
+}

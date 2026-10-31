@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "name": "Wetwire",
+  "chip": "adlib",
+  "sampleRate": 44100,
+  "seed": 1993,
+  "master": {
+    "volume": 1.0,
+    "limiter": true
+  },
+  "export": {
+    "dir": "export",
+    "manifest": "export/audio.ts",
+    "baseUrl": "/audio/",
+    "sfxFormat": "ogg",
+    "musicFormat": "ogg",
+    "oggQuality": 2,
+    "mp3Bitrate": 96,
+    "events": false,
+    "embed": false
+  }
+}

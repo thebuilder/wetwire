@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "pistol",
+  "category": "hit",
+  "chip": "custom",
+  "seed": 2328646831,
+  "wave": "noise",
+  "volume": 0.95,
+  "frequency": {
+    "start": 511.57,
+    "min": 0,
+    "slide": -5.401,
+    "deltaSlide": -16
+  },
+  "vibrato": {
+    "depth": 0,
+    "rate": 0
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0,
+    "sustain": 0.021,
+    "punch": 0.669,
+    "decay": 0.147
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 0,
+    "sweep": 0
+  },
+  "filter": {
+    "lowpass": 1819.989,
+    "lowpassSweep": -3.56,
+    "resonance": 0.28,
+    "highpass": null,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "long"
+  },
+  "fm": null,
+  "table": null
+}

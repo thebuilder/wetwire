@@ -1,0 +1,5 @@
+node_modules/
+dist/
+tests/shots/
+audio/out/
+.DS_Store

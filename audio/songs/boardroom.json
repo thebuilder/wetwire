@@ -1,0 +1,99 @@
+{
+ "version": 1,
+ "name": "Boardroom (AdLib, D minor, 84 BPM)",
+ "chip": "adlib",
+ "tempo": 84,
+ "rowsPerBeat": 4,
+ "tickRate": 60,
+ "channels": [
+  {
+   "id": "fm1",
+   "kind": "fm",
+   "instrument": "deep-thud",
+   "volume": 1.0,
+   "pan": 0,
+   "muted": false,
+   "mml": "@deep-thud v15 o2 l8 L [[d4. d8 r4 r8 d8]2 [e-4. e-8 r4 r8 e-8]2 <b-4. b-8 r4 r8 b-8> c4. c8 r4 r8 c8 [d4. d8 r4 r8 d8]2]2"
+  },
+  {
+   "id": "fm2",
+   "kind": "fm",
+   "instrument": "opl-bass",
+   "volume": 0.8,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-bass v13 o1 L [ [d1]2 [e-1]2 <b-1> c1 [d1]2 ]2"
+  },
+  {
+   "id": "fm3",
+   "kind": "fm",
+   "instrument": "cold-stab",
+   "volume": 0.62,
+   "pan": 0,
+   "muted": false,
+   "mml": "@cold-stab v13 o3 L [r1]8 [d2 r8 d8 r4]2 [e-2 r8 e-8 r4]2 <b-2 r8 b-8 r4> c2 r8 c8 r4 [d2 r8 d8 r4]2"
+  },
+  {
+   "id": "fm4",
+   "kind": "fm",
+   "instrument": "cold-stab",
+   "volume": 0.55,
+   "pan": 0,
+   "muted": false,
+   "mml": "@cold-stab v13 o3 L [r1]8 [f2 r8 f8 r4]2 [g2 r8 g8 r4]2 d-2 r8 d-8 r4 e-2 r8 e-8 r4 [f2 r8 f8 r4]2"
+  },
+  {
+   "id": "fm5",
+   "kind": "fm",
+   "instrument": "cold-stab",
+   "volume": 0.5,
+   "pan": 0,
+   "muted": false,
+   "mml": "@cold-stab v13 o3 L [r1]8 [a2 r8 a8 r4]2 [b-2 r8 b-8 r4]2 f2 r8 f8 r4 g2 r8 g8 r4 [a2 r8 a8 r4]2"
+  },
+  {
+   "id": "fm6",
+   "kind": "fm",
+   "instrument": "glass-pad",
+   "volume": 0.6,
+   "pan": 0,
+   "muted": false,
+   "mml": "@glass-pad v12 o4 L [a1 a2 g2 b-1 g1 f1 e-1 f2 e2 d1]2"
+  },
+  {
+   "id": "fm7",
+   "kind": "fm",
+   "instrument": "opl-kick",
+   "volume": 0.8,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-kick v15 o3 l16 L [c4 r4 c8. c16 r4]16"
+  },
+  {
+   "id": "fm8",
+   "kind": "fm",
+   "instrument": "opl-snare",
+   "volume": 0.62,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-snare o3 l16 L [ v14 [r4 c4 r4 c4]7 r4 c4 r8 v9 c16 v10 c16 v11 c16 v12 c16 v13 c16 v15 c16 ]2"
+  },
+  {
+   "id": "fm9",
+   "kind": "fm",
+   "instrument": "soft-hat",
+   "volume": 0.45,
+   "pan": 0,
+   "muted": false,
+   "mml": "@soft-hat v7 o3 L [r8 c8]64"
+  }
+ ],
+ "patterns": {},
+ "order": [],
+ "loop": null,
+ "master": {
+  "volume": 1.0,
+  "echo": null,
+  "reverb": null
+ }
+}

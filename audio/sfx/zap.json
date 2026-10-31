@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "name": "zap",
+  "category": "zap",
+  "chip": "custom",
+  "seed": 968528523,
+  "wave": "fm",
+  "volume": 0.52,
+  "frequency": {
+    "start": 523.25,
+    "min": 0,
+    "slide": -4.867,
+    "deltaSlide": -9.456
+  },
+  "vibrato": {
+    "depth": 0.59,
+    "rate": 22.3
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0,
+    "sustain": 0.098,
+    "punch": 0.45,
+    "decay": 0.159
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 0,
+    "sweep": 0
+  },
+  "filter": {
+    "lowpass": null,
+    "lowpassSweep": 0,
+    "resonance": 0,
+    "highpass": null,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "long"
+  },
+  "fm": {
+    "ratio": 3,
+    "index": 4.87,
+    "indexDecay": 0.16
+  },
+  "table": null
+}

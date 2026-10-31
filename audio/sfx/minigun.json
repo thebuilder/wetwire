@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "minigun",
+  "category": "hit",
+  "chip": "custom",
+  "seed": 2606236696,
+  "wave": "noise",
+  "volume": 0.871,
+  "frequency": {
+    "start": 433.18,
+    "min": 0,
+    "slide": -2.814,
+    "deltaSlide": -16
+  },
+  "vibrato": {
+    "depth": 0,
+    "rate": 0
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0,
+    "sustain": 0,
+    "punch": 0.744,
+    "decay": 0.088
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 0,
+    "sweep": 0
+  },
+  "filter": {
+    "lowpass": 1910,
+    "lowpassSweep": -3.93,
+    "resonance": 0.12,
+    "highpass": null,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "short"
+  },
+  "fm": null,
+  "table": null
+}

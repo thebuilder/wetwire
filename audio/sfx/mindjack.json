@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "mindjack",
+  "category": "teleport",
+  "chip": "custom",
+  "seed": 240277684,
+  "wave": "noise",
+  "volume": 0.95,
+  "frequency": {
+    "start": 1500.8,
+    "min": 0,
+    "slide": -2.304,
+    "deltaSlide": 0
+  },
+  "vibrato": {
+    "depth": 1.57,
+    "rate": 13.9
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0.244,
+    "sustain": 0.218,
+    "punch": 0,
+    "decay": 0.581
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 11,
+    "sweep": 1
+  },
+  "filter": {
+    "lowpass": 1500,
+    "lowpassSweep": 2.26,
+    "resonance": 0.49,
+    "highpass": 375,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "short"
+  },
+  "fm": null,
+  "table": null
+}

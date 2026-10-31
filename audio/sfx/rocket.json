@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "rocket",
+  "category": "explosion",
+  "chip": "custom",
+  "seed": 3006852726,
+  "wave": "noise",
+  "volume": 0.6,
+  "frequency": {
+    "start": 900,
+    "min": 0,
+    "slide": -0.6,
+    "deltaSlide": 0
+  },
+  "vibrato": {
+    "depth": 0,
+    "rate": 0
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0.02,
+    "sustain": 0.15,
+    "punch": 0.3,
+    "decay": 0.35
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 0,
+    "sweep": 0
+  },
+  "filter": {
+    "lowpass": 2600,
+    "lowpassSweep": -0.5,
+    "resonance": 0.31,
+    "highpass": null,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "long"
+  },
+  "fm": null,
+  "table": null
+}

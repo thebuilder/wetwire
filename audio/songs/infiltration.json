@@ -1,0 +1,90 @@
+{
+ "version": 1,
+ "name": "Infiltration (AdLib, E phrygian, 100 BPM)",
+ "chip": "adlib",
+ "tempo": 100,
+ "rowsPerBeat": 4,
+ "tickRate": 60,
+ "channels": [
+  {
+   "id": "fm1",
+   "kind": "fm",
+   "instrument": "pulse-bass",
+   "volume": 0.95,
+   "pan": 0,
+   "muted": false,
+   "mml": "@pulse-bass v14 o2 l8 q4 L [ [e e >e< e e e >e< e]4 [f f >f< f f f >f< f]2 [e e >e< e e e >e< e]2 ]2"
+  },
+  {
+   "id": "fm2",
+   "kind": "fm",
+   "instrument": "data-blip",
+   "volume": 0.45,
+   "pan": 0,
+   "muted": false,
+   "mml": "@data-blip v12 o5 L [r16 b16 r8 r4 r8. f16 r4 r4 r16 e16 r8 r4 b16 r16 r8]8"
+  },
+  {
+   "id": "fm3",
+   "kind": "fm",
+   "instrument": "soft-pluck",
+   "volume": 0.55,
+   "pan": 0,
+   "muted": false,
+   "mml": "@soft-pluck v12 o4 L [r1 r1 e8 r8 f8 r8 r2 r1 r1 r1 b4 r4 a4. r8 r1]2"
+  },
+  {
+   "id": "fm4",
+   "kind": "fm",
+   "instrument": "glass-pad",
+   "volume": 0.45,
+   "pan": 0,
+   "muted": false,
+   "mml": "@glass-pad v11 o3 L [ [e1]4 [f1]2 [e1]2 ]2"
+  },
+  {
+   "id": "fm5",
+   "kind": "fm",
+   "instrument": "glass-pad",
+   "volume": 0.38,
+   "pan": 0,
+   "muted": false,
+   "mml": "@glass-pad v11 o3 L [ [b1]4 > [c1]2 < [b1]2 ]2"
+  },
+  {
+   "id": "fm6",
+   "kind": "fm",
+   "instrument": "soft-hat",
+   "volume": 0.35,
+   "pan": 0,
+   "muted": false,
+   "mml": "@soft-hat o3 l16 L [v5 c c v8 c v5 c]64"
+  },
+  {
+   "id": "fm7",
+   "kind": "fm",
+   "instrument": "opl-kick",
+   "volume": 0.7,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-kick v15 o3 L [c4 r2.]8 [c4 r4 r8 c8 r4]8"
+  },
+  {
+   "id": "fm8",
+   "kind": "fm",
+   "instrument": "opl-snare",
+   "volume": 0.4,
+   "pan": 0,
+   "muted": false,
+   "mml": "@opl-snare v10 o3 L [r1]8 [r2. c4 r1]4"
+  }
+ ],
+ "patterns": {},
+ "order": [],
+ "loop": null,
+ "master": {
+  "volume": 1.0,
+  "echo": null,
+  "reverb": null
+ }
+}

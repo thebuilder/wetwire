@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "name": "FM snare (noise burst, no pitch sweep)",
+  "kind": "fm",
+  "chip": "adlib",
+  "volume": 1.0,
+  "envelope": {
+    "attack": 0,
+    "decay": 0.18,
+    "sustain": 0,
+    "release": 0.05
+  },
+  "macros": {
+    "volume": {
+      "values": [
+        1,
+        0.9,
+        0.75,
+        0.6,
+        0.48,
+        0.38,
+        0.29,
+        0.21,
+        0.15,
+        0.1,
+        0.06,
+        0.03,
+        0
+      ],
+      "loop": -1,
+      "release": -1
+    },
+    "arpeggio": {
+      "values": [
+        56,
+        55
+      ],
+      "loop": -1,
+      "release": -1
+    },
+    "arpeggioMode": "fixed"
+  },
+  "fm": {
+    "algorithm": 0,
+    "feedback": 7,
+    "lfo": null,
+    "ops": [
+      {
+        "mult": 7,
+        "detune": 0,
+        "level": 0.6,
+        "attack": 31,
+        "decay": 6,
+        "sustainLevel": 0,
+        "sustainRate": 0,
+        "release": 10,
+        "keyScale": 0,
+        "waveform": 0,
+        "fixedHz": null
+      },
+      {
+        "mult": 9,
+        "detune": 0,
+        "level": 1,
+        "attack": 31,
+        "decay": 10,
+        "sustainLevel": 0,
+        "sustainRate": 0,
+        "release": 10,
+        "keyScale": 0,
+        "waveform": 0,
+        "fixedHz": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "ignite",
+  "category": "custom",
+  "chip": "custom",
+  "seed": 6631,
+  "wave": "noise",
+  "volume": 0.6,
+  "frequency": {
+    "start": 180,
+    "min": 0,
+    "slide": 1.6,
+    "deltaSlide": -1.2
+  },
+  "vibrato": {
+    "depth": 0,
+    "rate": 0
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0.02,
+    "sustain": 0.12,
+    "punch": 0.3,
+    "decay": 0.5
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 0,
+    "sweep": 0
+  },
+  "filter": {
+    "lowpass": 900,
+    "lowpassSweep": 1.8,
+    "resonance": 0,
+    "highpass": 90,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "long"
+  },
+  "fm": null,
+  "table": null
+}

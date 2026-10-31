@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "impact",
+  "category": "hit",
+  "chip": "custom",
+  "seed": 3131285549,
+  "wave": "noise",
+  "volume": 0.95,
+  "frequency": {
+    "start": 483.18,
+    "min": 0,
+    "slide": -3.703,
+    "deltaSlide": -16
+  },
+  "vibrato": {
+    "depth": 0,
+    "rate": 0
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0,
+    "sustain": 0.035,
+    "punch": 0.762,
+    "decay": 0.081
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 0,
+    "sweep": 0
+  },
+  "filter": {
+    "lowpass": 3323,
+    "lowpassSweep": -3.35,
+    "resonance": 0.38,
+    "highpass": null,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "long"
+  },
+  "fm": null,
+  "table": null
+}

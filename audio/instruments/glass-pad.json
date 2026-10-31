@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "name": "Glass pad (additive 1+4, slow)",
+  "kind": "fm",
+  "chip": "adlib",
+  "volume": 0.5,
+  "pan": 0,
+  "transpose": 0,
+  "finetune": 0,
+  "envelope": {
+    "attack": 0.35,
+    "decay": 0.4,
+    "sustain": 0.8,
+    "release": 0.6
+  },
+  "macros": {},
+  "send": {
+    "echo": 0,
+    "reverb": 0
+  },
+  "pulse": null,
+  "wave": null,
+  "noise": null,
+  "sid": null,
+  "fm": {
+    "algorithm": 1,
+    "feedback": 2,
+    "lfo": {
+      "rate": 4.5,
+      "pitchDepth": 6,
+      "ampDepth": 0.08
+    },
+    "ops": [
+      {
+        "mult": 1,
+        "detune": 0,
+        "level": 0.85,
+        "attack": 12,
+        "decay": 2,
+        "sustainLevel": 0.8,
+        "sustainRate": 0,
+        "release": 5,
+        "keyScale": 0,
+        "waveform": 0,
+        "fixedHz": null
+      },
+      {
+        "mult": 4,
+        "detune": 0,
+        "level": 0.35,
+        "attack": 10,
+        "decay": 4,
+        "sustainLevel": 0.5,
+        "sustainRate": 0,
+        "release": 4,
+        "keyScale": 0,
+        "waveform": 1,
+        "fixedHz": null
+      }
+    ]
+  },
+  "sample": null
+}

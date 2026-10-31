@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "name": "explosion",
+  "category": "explosion",
+  "chip": "custom",
+  "seed": 1573193162,
+  "wave": "noise",
+  "volume": 0.95,
+  "frequency": {
+    "start": 220,
+    "min": 0,
+    "slide": -1.4,
+    "deltaSlide": 0.4
+  },
+  "vibrato": {
+    "depth": 0,
+    "rate": 0
+  },
+  "arpeggio": {
+    "steps": [],
+    "rate": 0
+  },
+  "envelope": {
+    "attack": 0,
+    "sustain": 0.3,
+    "punch": 0.75,
+    "decay": 1.0
+  },
+  "duty": {
+    "start": 0.5,
+    "sweep": 0
+  },
+  "repeat": {
+    "rate": 0
+  },
+  "phaser": {
+    "offset": 0,
+    "sweep": 0
+  },
+  "filter": {
+    "lowpass": 3200,
+    "lowpassSweep": -1.1,
+    "resonance": 0.2,
+    "highpass": null,
+    "highpassSweep": 0
+  },
+  "bitcrush": {
+    "bits": null,
+    "rateDivide": 1
+  },
+  "noise": {
+    "mode": "long"
+  },
+  "fm": null,
+  "table": null
+}

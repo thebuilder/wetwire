@@ -220,7 +220,6 @@ export function setSound(on) {
   AU.on = on;
   if (on) audioInit();
   if (AU.master) AU.master.gain.setTargetAtTime(on ? 0.9 : 0, AU.ctx.currentTime, 0.05);
-  $('#sndBtn').textContent = on ? 'SOUND: ON' : 'SOUND: OFF'; $('#sndBtn').classList.toggle('on', on);
   $('#bSnd').classList.toggle('on', !on);
 }
 export function playMusic(name, fade?) {

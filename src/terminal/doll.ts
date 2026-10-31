@@ -24,8 +24,8 @@ export interface AgentLook {
 
 /** Where each figure's features sit. x is mirrored around the gap between columns 32 and 33. */
 const FRAME: Record<Sex, { armL: number; armR: number; legY: number; handL: number; handR: number; browY: number; eyeY: number; noseY: number; mouthY: number; hairY: number; clear: [number, number] }> = {
-  m: { armL: 19, armR: 46, legY: 66, handL: 15, handR: 50, browY: 9, eyeY: 11, noseY: 14, mouthY: 16, hairY: 8, clear: [9, 17] },
-  f: { armL: 20, armR: 44, legY: 64, handL: 14, handR: 51, browY: 9, eyeY: 11, noseY: 15, mouthY: 17, hairY: 8, clear: [10, 18] },
+  m: { armL: 19, armR: 46, legY: 66, handL: 15, handR: 50, browY: 9, eyeY: 11, noseY: 14, mouthY: 16, hairY: 6, clear: [9, 17] },
+  f: { armL: 20, armR: 44, legY: 64, handL: 14, handR: 51, browY: 9, eyeY: 11, noseY: 15, mouthY: 17, hairY: 6, clear: [10, 18] },
 };
 const W = 66, H = 137;
 /** Brightness per level. The steps are wide so a one-level difference still shows through the CRT. */
@@ -45,7 +45,8 @@ function partAt(sex: Sex, x: number, y: number): ModPart | 'head' {
   return y <= 84 && (x <= F.handL || x >= F.handR) ? 'arms' : 'legs';
 }
 
-export function buildDoll(look: AgentLook) {
+/** focus lights one cyborg part in the accent colour, to show where a mod goes. */
+export function buildDoll(look: AgentLook, focus?: ModPart) {
   const { sex, mods } = look, F = FRAME[sex], base = BODY[sex];
   const lv = new Int8Array(base), hu = new Uint8Array(W * H);
   const at = (x: number, y: number) => y * W + x;
@@ -75,15 +76,14 @@ export function buildDoll(look: AgentLook) {
     return a < 0 ? null : [a, b];
   };
   if (look.hair === 'crop' || look.hair === 'slick' || look.hair === 'bob') {
-    for (let y = 0; y <= F.hairY; y++) {
-      const s = row(y); if (!s) continue;
-      for (let x = s[0]; x <= s[1]; x++) {
-        if (look.hair === 'crop') set(x, y, (x + y) % 2 ? 2 : 1);
-        else set(x, y, (x + y) % 7 === 0 ? 2 : 1);
-      }
-    }
-    // the hairline comes down at the temples, staying inside the head's outline
-    for (const k of [5, 6]) { on(32 - k, F.hairY + 1, 1); on(33 + k, F.hairY + 1, 1); }
+    const crop = look.hair === 'crop', strand = (x: number, y: number) => (crop ? ((x * 7 + y * 13 + x * y) % 11 < 2 ? 3 : (x + y) % 3 === 0 ? 2 : 1) : (x - y * 2 + 60) % 6 === 0 ? 3 : 1);
+    let top = 0; while (!row(top)) top++;
+    for (let y = top; y <= F.hairY; y++) { const s = row(y); for (let x = s[0]; x <= s[1]; x++) set(x, y, x === s[0] || x === s[1] ? 0 : strand(x, y)); }
+    // volume above the skull, so it sits on the head instead of being painted on it. Crop stands up in tufts.
+    if (top > 0) { const s = row(top); for (let x = s[0] + 1; x < s[1]; x++) if (!crop || x % 2) set(x, top - 1, crop ? 1 : 0); }
+    // an uneven hairline, and sideburns down past the temples
+    for (let k = 0; k <= 5; k++) if (crop ? k % 2 : k > 2) both(k, F.hairY + 1, strand(32 - k, F.hairY + 1));
+    const edge = row(F.hairY + 2); if (edge) for (let y = F.hairY + 1; y <= F.hairY + 3; y++) { const e = row(y); if (e) for (const x of [e[0] + 1, e[1] - 1]) on(x, y, 1); }
   }
   if (look.hair === 'mohawk') {
     for (let y = 0; y <= F.hairY; y++) { const s = row(y); if (s) for (let x = s[0]; x <= s[1]; x++) if (lv[at(x, y)] > 2) set(x, y, dark(2)); }
@@ -106,18 +106,17 @@ export function buildDoll(look: AgentLook) {
     const by = look.brow === 'raised' ? F.browY - 1 : F.browY;
     for (const k of [1, 2, 3, 4]) both(k, look.brow === 'angry' ? by + (k <= 2 ? 1 : 0) : by, dark(sex === 'm' ? 5 : 4));
   }
-  // eyes: dark socket, pupil, then a lower lid
-  for (const k of [1, 2, 3]) both(k, eye, k === 2 ? 0 : dark(4));
-  both(2, eye + 1, dark(2));
+  // eyes: a level gaze, dark socket around the pupil
+  for (const k of [1, 2, 3]) both(k, eye, k === 2 ? 0 : dark(3));
   // nose: a shadow under the bridge
   both(0, F.noseY, dark(2));
   // mouth: always a dark line, the one feature that must survive the tube
   const my = F.mouthY;
   for (const k of [0, 1]) both(k, my, 1);
-  if (look.mouth === 'grim') both(2, my + 1, dark(3));
-  else if (look.mouth === 'smirk') { both(2, my, 1); set(35, my - 1, dark(3)); }
+  if (look.mouth === 'grim') { both(2, my, 1); both(0, my + 1, dark(1)); }
+  else if (look.mouth === 'smirk') { set(30, my, 1); set(35, my, 1); set(36, my - 1, dark(3)); }
   else if (look.mouth === 'lips') { both(0, my - 1, dark(2)); both(0, my + 1, dark(2)); both(2, my, dark(3)); }
-  else { both(2, my, dark(3)); both(0, my + 1, dark(1)); }
+  else both(0, my + 1, dark(1));
   if (look.scar) for (let i = 0; i < 7; i++) on(36 - Math.floor(i / 3), eye - 3 + i, dark(3));
 
   /* ---------------------------------------------------------------- cyborg mods */
@@ -145,18 +144,26 @@ export function buildDoll(look: AgentLook) {
     for (let k = 0; k <= 5; k++) { both(k, eye, 2, hue); both(k, eye + 1, 0); }
     for (const k of [1, 2]) both(k, eye, 5, hue);
   }
-  if (mods.brain) { const hue = glow[mods.brain]; for (let k = 0; k < 5; k += 2) both(k, F.hairY - 2, 5, hue); if (mods.brain > 1) both(0, F.hairY - 5, 5, hue); }
+  if (mods.brain) { const hue = glow[mods.brain]; for (let k = 0; k < 5; k += 2) both(k, F.hairY - 2, 5, hue); if (mods.brain > 1) both(0, F.hairY - 3, 5, hue); }
   if (mods.heart) { for (let y = 30; y <= 35; y++) for (let x = 35; x <= 40; x++) set(x, y, x === 35 || x === 40 || y === 30 || y === 35 ? 0 : 2); const hue = glow[Math.max(2, mods.heart)]; for (const [x, y] of [[37, 32], [38, 32], [37, 33], [38, 33]]) set(x, y, mods.heart === 1 ? 4 : 5, mods.heart === 1 ? 0 : hue); }
 
+  if (focus) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = at(x, y); if (lv[i] < 0) continue;
+    const hit = focus === 'eyes' ? y >= eye - 1 && y <= eye + 1 && x >= 28 && x <= 37
+      : focus === 'brain' ? y <= F.hairY + 1
+      : focus === 'heart' ? y >= 29 && y <= 36 && x >= 34 && x <= 41
+      : partAt(sex, x, y) === focus;
+    if (hit) hu[i] = hu[i] || 2;
+  }
   return { lv, hu };
 }
 
 const cache = new Map<string, HTMLCanvasElement>();
 /** The look as a bitmap with its brightness in each pixel's hue channel, ready for Term.pixels(). */
-export function dollBitmap(look: AgentLook) {
-  const key = JSON.stringify(look);
+export function dollBitmap(look: AgentLook, focus?: ModPart) {
+  const key = JSON.stringify(look) + (focus || '');
   const hit = cache.get(key); if (hit) return hit;
-  const { lv, hu } = buildDoll(look);
+  const { lv, hu } = buildDoll(look, focus);
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d')!, im = g.createImageData(W, H), o = im.data;
   for (let i = 0; i < W * H; i++) {

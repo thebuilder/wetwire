@@ -21,8 +21,7 @@ npm test           # typecheck, build, then the headless smoke tests
 | Path | What |
 | --- | --- |
 | `index.html` | Page markup and game CSS |
-| `src/` | Game source as TypeScript modules; `src/main.ts` is the entry and `src/terminal/` the new CRT terminal |
-| `mockups/` | Dev-only pages, served by `npm run dev` |
+| `src/` | Game source as TypeScript modules; `src/main.ts` is the entry, `src/pages.ts` the company terminal and `src/terminal/` its CRT renderer |
 | `scripts/` | `icons.py` (weapon icon import) |
 | `tests/` | Playwright smoke tests: `run.mjs` and one file per scenario in `tests/scenarios/` |
 | `audio/` | Bleepkit project: songs, instruments, sfx as JSON, plus the exported `.ogg` files the game loads |

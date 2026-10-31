@@ -196,7 +196,7 @@ export function groundRing(x, z, r, col, dash, y?) {
 export function drawOverlay() {
   ctx.clearRect(0, 0, SW, SH);
   if (!MS || !MS.def) return;
-  ctx.lineWidth = Math.max(1, Math.round(DPR)); ctx.font = '600 ' + (12 * DPR) + 'px "Chakra Petch", system-ui, sans-serif'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = Math.max(1, Math.round(DPR)); ctx.font = (16 * DPR) + 'px VT323, monospace'; ctx.textBaseline = 'middle';
   const PH = 'rgba(134,250,221,', SG = 'rgba(255,91,130,', AM = 'rgba(255,196,107,';
   const s0 = [0, 0, 0], s1 = [0, 0, 0];
   const camsVisible = hackT > 0.05 || WORLD.cams.some((c) => c.spot);
@@ -243,9 +243,9 @@ export function drawOverlay() {
     if (p.fac !== 'corp' && p.fac !== 'law') continue;
     toScreen(p.x, gy + 2.3, p.z, s0);
     if (p.alerted) {
-      ctx.font = (20 * DPR) + 'px "Jersey 10", monospace'; label('!', s0[0], s0[1] - 4 * DPR, SG + '0.95)'); ctx.font = '600 ' + (12 * DPR) + 'px "Chakra Petch", system-ui, sans-serif';
+      ctx.font = (24 * DPR) + 'px VT323, monospace'; label('!', s0[0], s0[1] - 4 * DPR, SG + '0.95)'); ctx.font = (16 * DPR) + 'px VT323, monospace';
     } else if (p.sus > 0.04) {
-      ctx.font = (20 * DPR) + 'px "Jersey 10", monospace'; label('?', s0[0], s0[1] - 4 * DPR, AM + (0.4 + 0.6 * p.sus) + ')'); ctx.font = '600 ' + (12 * DPR) + 'px "Chakra Petch", system-ui, sans-serif';
+      ctx.font = (24 * DPR) + 'px VT323, monospace'; label('?', s0[0], s0[1] - 4 * DPR, AM + (0.4 + 0.6 * p.sus) + ')'); ctx.font = (16 * DPR) + 'px VT323, monospace';
       const w = 12 * DPR; ctx.fillStyle = AM + '0.25)'; ctx.fillRect(s0[0] - w / 2, s0[1] + 5 * DPR, w, 2 * DPR); ctx.fillStyle = AM + '0.95)'; ctx.fillRect(s0[0] - w / 2, s0[1] + 5 * DPR, w * p.sus, 2 * DPR);
     }
     if (p.hp < p.maxHp && p !== target) { const w = 16 * DPR; ctx.fillStyle = SG + '0.25)'; ctx.fillRect(s0[0] - w / 2, s0[1] + 9 * DPR, w, 2 * DPR); ctx.fillStyle = SG + '0.9)'; ctx.fillRect(s0[0] - w / 2, s0[1] + 9 * DPR, w * p.hp / p.maxHp, 2 * DPR); }

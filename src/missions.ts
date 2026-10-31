@@ -7,7 +7,6 @@ import { MISSIONS, SAVE, WEAPONS, store } from './campaign';
 import { MS, SKINS, agents, lastCombat, militia, mkCarAt, mkPerson, people, renderObjs, setObj, setTarget, spawnCiv, target, time } from './setup';
 import { alertNpc, enterTower, followPath, say, spawnCorp, squadCenter, updateEntering } from './sim';
 import { fmt } from './flow';
-import { renderPage } from './pages';
 
 /* ================================================================ mission scripts
    A contract can register SCRIPTS[id] = { setup(def, L), update(dt) } to add its own cast and timeline on top of
@@ -127,7 +126,7 @@ export function updateChairman(p, dt) {
 
 /* ================================================================ territory: every finished contract wins a district that pays tax
    between missions. Tax too hard and unrest builds until the district revolts and has to be retaken. */
-const TERR = {
+export const TERR = {
   compound: { name: 'Kessel outskirts', pop: 18, r: [4, 6, 30, 26] },
   halden:   { name: 'Meridian campus', pop: 40, r: [36, 4, 30, 24] },
   varga:    { name: 'Sector 9', pop: 85, r: [36, 32, 30, 30] },
@@ -135,9 +134,9 @@ const TERR = {
   courier:  { name: 'Harbour docks', pop: 55, r: [36, 66, 34, 28] },
   airfield: { name: 'Meridian airfield', pop: 35, r: [70, 10, 26, 46] },
 };
-const TAX_FAIR = 18;
+export const TAX_FAIR = 18;
 export function terrOf(id) { SAVE.terr = SAVE.terr || {}; if (SAVE.done[id] && !SAVE.terr[id]) SAVE.terr[id] = { tax: 15, unrest: 0, revolt: false }; return SAVE.terr[id] || null; }
-const taxIncome = (id) => { const t = terrOf(id); return t && !t.revolt ? Math.round(TERR[id].pop * t.tax * 1.2) : 0; };
+export const taxIncome = (id) => { const t = terrOf(id); return t && !t.revolt ? Math.round(TERR[id].pop * t.tax * 1.2) : 0; };
 /* called from settle(): collect taxes, move unrest, start or end revolts */
 export function settleTerritory(res, add, rows) {
   if (res === 'abort') return;
@@ -152,43 +151,6 @@ export function settleTerritory(res, add, rows) {
     if (t.unrest >= 100) { t.revolt = true; rows.push(['REVOLT // ' + TERR[id].name + ' stops paying', 0]); }
   }
   if (inc) add('Territory taxes', inc);
-}
-export function renderTerritory(P) {
-  const owned = Object.keys(TERR).filter((id) => terrOf(id));
-  const total = owned.reduce((s, id) => s + taxIncome(id), 0);
-  P.innerHTML = '<h2 class="tt">Territory <small>Districts Kessel controls. Taxes are collected each time a team comes home.</small></h2><div class="split terr"><div class="box"><div class="bh">Harrow Bay</div><canvas id="tmap" class="tmap"></canvas>'
-    + '<div class="legend"><span><i style="background:#2f9a8a"></i>Ours</span><span><i style="background:#ff5b82"></i>Revolt</span><span><i style="border:1px solid #ffc46b"></i>Open contract</span></div></div>'
-    + '<div class="box"><div class="bh">Districts // ' + fmt(total) + ' CR per contract</div>'
-    + (owned.length ? owned.map((id) => {
-      const t = terrOf(id), u = Math.round(t.unrest);
-      return '<div class="trow' + (t.revolt ? ' rev' : '') + '"><div class="tn"><b>' + TERR[id].name + '</b><span>' + (t.revolt ? 'IN REVOLT // RETAKE IT: REPLAY CONTRACT ' + MISSIONS.find((m) => m.id === id).code : 'POP ' + TERR[id].pop + 'K // PAYS ' + fmt(taxIncome(id)) + ' CR') + '</span></div>'
-        + '<div class="tax"><button data-tax="' + id + '" data-d="-5"' + (t.revolt || t.tax <= 0 ? ' disabled' : '') + '>-</button><b>' + t.tax + '%</b><button data-tax="' + id + '" data-d="5"' + (t.revolt || t.tax >= 60 ? ' disabled' : '') + '>+</button></div>'
-        + '<div class="unrest"><span class="lbl">Unrest</span><div class="bar"><i style="width:' + u + '%;background:' + (u > 70 ? 'var(--pink)' : u > 40 ? 'var(--amber)' : 'var(--teal)') + '"></i></div></div></div>';
-    }).join('') : '<p class="dim">No districts yet. Every completed contract brings one under Kessel control.</p>')
-    + '<p class="dim" style="margin-top:12px">Above ' + TAX_FAIR + '% unrest grows after every contract, below it unrest fades. At full unrest a district revolts and pays nothing until a team retakes it.</p></div></div>';
-  P.querySelectorAll('[data-tax]').forEach((b) => b.addEventListener('click', () => { const t = terrOf(b.dataset.tax); t.tax = clamp(t.tax + +b.dataset.d, 0, 60); store(); sfx('ui', null, null, 0.4, 1.2); renderPage(); }));
-  requestAnimationFrame(() => drawTerrMap($('#tmap')));
-}
-function drawTerrMap(cv) {
-  if (!cv) return;
-  const dpr = Math.min(2, window.devicePixelRatio || 1), W = cv.clientWidth || 360, H = cv.clientHeight || 300;
-  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const k = Math.min(W / 100, H / 100), ox = (W - 100 * k) / 2, oy = (H - 100 * k) / 2;
-  g.fillStyle = '#05080b'; g.fillRect(0, 0, W, H);
-  g.fillStyle = 'rgba(47,154,138,0.12)'; g.fillRect(ox + 72 * k, oy + 60 * k, 28 * k, 40 * k); g.fillRect(ox, oy + 96 * k, 100 * k, 4 * k);
-  g.strokeStyle = 'rgba(134,250,221,0.07)'; g.beginPath(); for (let i = 0; i <= 100; i += 5) { g.moveTo(ox + i * k, oy); g.lineTo(ox + i * k, oy + 100 * k); g.moveTo(ox, oy + i * k); g.lineTo(ox + 100 * k, oy + i * k); } g.stroke();
-  g.font = '600 11px "Chakra Petch", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (const id in TERR) {
-    const T = TERR[id], [x, y, w, h] = T.r, t = terrOf(id), m = MISSIONS.find((q) => q.id === id), open = !t && m && !(m.need && !SAVE.done[m.need]);
-    const px = ox + x * k, py = oy + y * k, pw = w * k, ph = h * k;
-    g.fillStyle = t ? (t.revolt ? (Math.floor(performance.now() / 500) % 2 ? 'rgba(255,91,130,0.35)' : 'rgba(255,91,130,0.18)') : 'rgba(47,154,138,0.35)') : 'rgba(134,250,221,0.04)';
-    g.fillRect(px + 1, py + 1, pw - 2, ph - 2);
-    g.strokeStyle = t ? (t.revolt ? '#ff5b82' : '#86fadd') : open ? '#ffc46b' : 'rgba(134,250,221,0.2)'; g.lineWidth = 1; g.strokeRect(px + 1.5, py + 1.5, pw - 3, ph - 3);
-    const lab = t || open ? T.name.toUpperCase() : 'UNKNOWN'; let fs = 11; g.font = '600 ' + fs + 'px "Chakra Petch", system-ui, sans-serif'; while (fs > 7 && g.measureText(lab).width > pw - 8) { fs--; g.font = '600 ' + fs + 'px "Chakra Petch", system-ui, sans-serif'; }
-    g.fillStyle = t ? '#c9d3df' : open ? '#ffc46b' : 'rgba(201,211,223,0.35)'; g.fillText(lab, px + pw / 2, py + ph / 2 - 6);
-    g.fillStyle = 'rgba(201,211,223,0.5)'; g.fillText(t ? (t.revolt ? 'REVOLT' : t.tax + '% TAX') : open ? 'CONTRACT ' + m.code : '', px + pw / 2, py + ph / 2 + 9);
-  }
 }
 export const intelCost = (m) => Math.round(m.reward * 0.07 / 100) * 100;
 export const hasIntel = (m) => !!(m.id === 'compound' || SAVE.done[m.id] || (SAVE.intel && SAVE.intel[m.id]));

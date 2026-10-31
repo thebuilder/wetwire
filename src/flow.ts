@@ -97,9 +97,9 @@ function showEnd(res, L) {
   if (res === 'abort') bits.push('Recalled before the job was done. Ammunition spent stays spent.');
   if (res === 'dead') bits.push('Every agent flatlined. Their gear is gone with them.');
   if (L.lost.length && res !== 'dead') bits.push('Lost: ' + L.lost.join(', ') + '. Their weapons and mods are gone.');
-  if (MS.researched) bits.push('<span class="capt">Research complete: ' + MS.researched + '.</span>');
-  if (L.captured.length) bits.push('<span class="capt">Captured tech, now in the armoury: ' + L.captured.map((id) => WEAPONS[id].name).join(', ') + '.</span>');
-  if (res === 'win' && MS.def.id === 'compound') bits.push('<span class="capt">Unlocked: version 2 cyborg mods and the MK2 deck.</span>');
+  if (MS.researched) bits.push('*Research complete: ' + MS.researched + '.*');
+  if (L.captured.length) bits.push('*Captured tech, now in the armoury: ' + L.captured.map((id) => WEAPONS[id].name).join(', ') + '.*');
+  if (res === 'win' && MS.def.id === 'compound') bits.push('*Unlocked: version 2 cyborg mods and the MK2 deck.*');
   setDEBRIEF({ res, title: { win: 'Contract complete', fail: 'Target escaped', dead: 'Squad flatlined', abort: 'Contract aborted' }[res], sub: 'Contract ' + MS.def.code + ' // ' + MS.def.region,
     rows, ledger: L.rows.length ? L.rows : [['No fee', 0]], total: L.total, text: bits.join(' ') });
   if (res === 'win' && planDef === MS.def) setPlanDef(null);

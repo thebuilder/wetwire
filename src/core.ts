@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export const $ = (s: string): any => document.querySelector(s);
-export function fatal(msg) { const it = $('#intro'); if (it) it.remove(); $('#boot').hidden = false; const e = $('#bootErr'); e.textContent = msg; e.hidden = false; $('#startBtn').disabled = true; $('#startBtn').textContent = 'OFFLINE'; }
+export function fatal(msg) { $('#termS').hidden = true; const e = $('#fatal'); e.textContent = msg; e.hidden = false; }
 
 /* ================================================================ utils */
 export const clamp = (v, a, b) => v < a ? a : v > b ? b : v;

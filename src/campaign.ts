@@ -1,3 +1,5 @@
+import { type AgentLook, BROWS, HAIRS, MOUTHS, SKINS } from './terminal/doll';
+
 /* ================================================================ campaign data */
 export const WEAPONS = {
   pistol:   { name: 'PISTOL', cost: 0, w: 1, kind: 'bullet', range: 12, rof: 2.4, dmg: 24, spread: 0.04, mag: 13, mags: 5, reload: 1.1, noise: 13, ammo: 0, desc: 'Accurate and quiet. Free to buy and reload.' },
@@ -63,13 +65,34 @@ export const MISSIONS: any[] = [
     threat: 'Police, Meridian security with *lasers*, two *sentry turrets*' },
 ];
 export const NAMES = ['MARLOW', 'IVY', 'KADE', 'ROOK', 'SABLE', 'JUNO', 'TEAGUE', 'NOVAK', 'REI', 'CASS'];
-const SAVE_KEY = 'wetwire.save.v2';
+// Save files. The first keeps the original key, so saves from before there were files just appear in it.
+const SAVE_KEYS = ['wetwire.save.v2', 'wetwire.save.v2.2', 'wetwire.save.v2.3'];
+const LAST_KEY = 'wetwire.file';
+export const SAVE_FILES = SAVE_KEYS.length;
+const readFile = (i) => { try { const s = JSON.parse(localStorage.getItem(SAVE_KEYS[i])); if (s && Array.isArray(s.agents)) return s; } catch (e) {} return null; };
+export let saveFile = (() => { try { const n = +localStorage.getItem(LAST_KEY); return n >= 0 && n < SAVE_KEYS.length ? n : 0; } catch (e) { return 0; } })();
+/* What the file select shows, without loading the file. */
+export function fileInfo(i) { const s = readFile(i); return s && { cash: s.cash, done: Object.keys(s.done || {}).length, agents: s.agents.filter((r) => r.alive).length, when: s.when || null }; }
+export function openFile(i) { saveFile = i; try { localStorage.setItem(LAST_KEY, String(i)); } catch (e) {} SAVE = readFile(i) || freshSave(); store(); }
+// How each agent looks. Only the cosmetics are stored; the mods stay on the record.
+const STARTER_LOOKS = {
+  KESTREL: { skin: 0, hair: 'crop', brow: 'angry', mouth: 'grim', scar: false },
+  ODA: { skin: 1, hair: 'bob', brow: 'flat', mouth: 'lips', scar: false },
+  VANCE: { skin: 2, hair: 'bald', brow: 'raised', mouth: 'smirk', scar: true },
+  SAINT: { skin: 0, hair: 'mohawk', brow: 'none', mouth: 'line', scar: false },
+};
+function defaultLook(name, sex) {
+  if (STARTER_LOOKS[name]) return { ...STARTER_LOOKS[name] };
+  let h = 7; for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const of = (a, k) => a[(h >>> k) % a.length];
+  return { skin: of(SKINS, 2), hair: of(HAIRS, 5), brow: of(BROWS, 9), mouth: sex === 'f' ? of(MOUTHS, 12) : of(['line', 'grim', 'smirk'], 12), scar: (h >>> 15) % 5 === 0 };
+}
+export function lookOf(r): AgentLook { if (!r.look) r.look = defaultLook(r.name, r.sex); return { sex: r.sex, mods: r.mods, ...r.look }; }
 export function fullAmmo(id) { const w = WEAPONS[id]; return w && w.energy == null ? { mag: w.mag, res: w.mag * (w.mags - 1) } : null; }
-export function mkRec(name, sex) { return { name, sex, alive: true, deploy: true, mods: { arms: 0, legs: 0, chest: 0, eyes: 0, heart: 0, brain: 0 }, slots: ['pistol', null], gear: null, ammo: { pistol: fullAmmo('pistol') }, charges: 0, kills: 0, missions: 0 }; }
+export function mkRec(name, sex) { return { name, sex, look: defaultLook(name, sex), alive: true, deploy: true, mods: { arms: 0, legs: 0, chest: 0, eyes: 0, heart: 0, brain: 0 }, slots: ['pistol', null], gear: null, ammo: { pistol: fullAmmo('pistol') }, charges: 0, kills: 0, missions: 0 }; }
 export function freshSave() { const k = mkRec('KESTREL', 'm'); k.gear = 'deck'; k.charges = 3; return { cash: 3000, agents: [k, mkRec('ODA', 'f'), mkRec('VANCE', 'm'), mkRec('SAINT', 'f')], avail: START_AVAIL.slice(), done: {}, recruits: 0 }; }
-function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && Array.isArray(s.agents)) return s; } catch (e) {} return freshSave(); }
-export function store() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) {} }
-export let SAVE = loadSave();
+export function store() { try { SAVE.when = new Date().toISOString(); localStorage.setItem(SAVE_KEYS[saveFile], JSON.stringify(SAVE)); } catch (e) {} }
+export let SAVE: any = readFile(saveFile) || freshSave();
 export function setSAVE(v: typeof SAVE) { return SAVE = v; }
 export function recWeight(r) { let w = 0; for (const s of r.slots) if (s) w += WEAPONS[s].w; if (r.gear) w += GEAR[r.gear].w; return w; }
 export function ammoCost(r, id) { const w = WEAPONS[id]; if (!w || w.energy != null || !w.ammo) return 0; const a = r.ammo[id] || { mag: 0, res: 0 }; const miss = w.mag * w.mags - (a.mag + a.res); return Math.max(0, Math.ceil(miss / w.mag * w.ammo)); }

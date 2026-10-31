@@ -39,7 +39,7 @@ export function setHackT(v: typeof hackT) { return hackT = v; }
 export function setTimeScale(v: typeof timeScale) { return timeScale = v; }
 export function setFireMode(v: typeof fireMode) { return fireMode = v; }
 export function setSelected(v: typeof selected) { return selected = v; }
-export let spotLogT = -99, lastKeyT = 0, lastKey = '', hackJob = null, abortT = 0;
+export let spotLogT = -99, lastKeyT = 0, lastKey = '', hackJob = null, abortT = -1e9;
 export function setSpotLogT(v: typeof spotLogT) { return spotLogT = v; }
 export function setLastKeyT(v: typeof lastKeyT) { return lastKeyT = v; }
 export function setLastKey(v: typeof lastKey) { return lastKey = v; }
@@ -129,17 +129,17 @@ export function clearMission() {
   time = 0; missionT = 0; hackOn = false; hackT = 0; timeScale = 1; fireMode = false; selected = new Set<any>(); spotLogT = -99; target = null;
   train = { z: -80, speed: 20, wait: 0 };
 }
-function spawnAgents(x, z, yaw) {
-  const recs = SAVE.agents.filter((r) => r.alive && r.deploy).slice(0, MS.def.max);
-  agents = recs.map((r, i) => {
+export function makeAgent(r, i, x, z, yaw) {
     const d = derive(r.mods);
-    const sp = nearestOpen(x - 1 + (i % 2) * 1.6, z + Math.floor(i / 2) * 1.6, 5) || [x, z];
-    const a = mkPerson({ kind: 'agent', fac: 'player', idx: i, rec: r, name: r.name, x: sp[0], z: sp[1], hp: 200, maxHp: 200,
+    const sp = nearestOpen(x, z, 5) || [x, z];
+    return mkPerson({ kind: 'agent', fac: 'player', idx: i, rec: r, name: r.name, x: sp[0], z: sp[1], hp: 200, maxHp: 200,
       color: r.sex === 'f' ? [0.16, 0.15, 0.2] : [0.15, 0.17, 0.21], skin: SKINS[[0, 2, 1, 3][i % 4]], rim: [0.25, 1, 0.85], coat: 2, armed: 0, scale: r.sex === 'f' ? 1.06 : 1.12,
       slots: r.slots.slice(), cur: r.slots[0] ? 0 : 1, ammo: JSON.parse(JSON.stringify(r.ammo)), cell: 100, gear: r.gear, gearUsed: false, charges: r.charges || 0, d,
       dose: { adr: 0, per: 0, int: 0 }, sync: 1, crash: 0, lastHit: -99, lastShot: -99, ftarget: null, fpoint: null, fpointT: 0, yaw, link: null, linkT: 0, healT: 0, kills: 0 });
-    return a;
-  });
+}
+function spawnAgents(x, z, yaw) {
+  const recs = SAVE.agents.filter((r) => r.alive && r.deploy).slice(0, MS.def.max);
+  agents = recs.map((r, i) => makeAgent(r, i, x - 1 + (i % 2) * 1.6, z + Math.floor(i / 2) * 1.6, yaw));
   selected = new Set(agents);
 }
 export function militia(x, z, weapon, o) {
@@ -234,7 +234,7 @@ export function startMission(def) {
   $('#log').innerHTML = '';
   buildSquadRows(); renderObjs();
   state = 'play';
-  for (const s of ['#boot', '#termS']) $(s).hidden = true;
+  $('#termS').hidden = true;
   $('#hud').hidden = false;
   playMusic('infiltration', 2);
   say('SQUAD DEPLOYED // ' + def.region.toUpperCase(), '');

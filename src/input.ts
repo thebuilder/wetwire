@@ -90,6 +90,7 @@ export function selectAll() {
 function centerOn(list) { if (!list.length) return; let x = 0, z = 0; for (const a of list) { x += a.inCar ? a.inCar.x : a.x; z += a.inCar ? a.inCar.z : a.z; } camT.x = x / list.length; camT.z = z / list.length; }
 window.addEventListener('keydown', (e) => {
   if (e.target && ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT')) return;
+  if (!$('#termS').hidden) return;
   const k = e.key.toLowerCase();
   if (k === 'm') { setSound(!AU.on); return; }
   if (k === 'p') { toggleLab(); return; }

@@ -9,8 +9,8 @@ export interface Cell { c: string; b: number; inv: boolean; u: boolean; hue: Hue
 export interface Style { b?: number; inv?: boolean; u?: boolean; hue?: Hue }
 export interface Palette { phosphor: number[]; alert: number[]; accent: number[] }
 export type Bitmap = HTMLCanvasElement;
-interface Region extends Rect { id: string; on?: () => void }
-interface Blit extends Rect { src: Bitmap; top: boolean }
+interface Region extends Rect { id: string; on?: () => void; wheel?: (dir: number) => void }
+interface Blit extends Rect { src: Bitmap; top: boolean; dy: number }
 export type DrawFn = (t: Term, now: number) => void;
 
 export const PALETTES: Record<string, Palette> = {
@@ -68,10 +68,11 @@ const FS = `
   }`;
 
 export class Term {
-  cols = 100; rows = 30; cw = 8; ch = 21; font = 20; dpr = 1;
+  cols = 120; rows = 30; cw = 8; ch = 21; font = 20; dpr = 1;
   crt = 0.3; power = 1; flick = 0; glitch = 0; roll = 0;
   palette = PALETTES.teal;
   hover: string | null = null;
+  onPress: (() => void) | null = null;
   private cells: Cell[][] = [];
   private clipR: Rect | null = null;
   private regions: Region[] = [];
@@ -83,9 +84,9 @@ export class Term {
   private U: Record<string, WebGLUniformLocation | null> = {};
   private mouse: [number, number] = [-1, -1];
   private t0 = performance.now();
-  private raf = 0;
+  private lastTick = 0;
 
-  constructor(private glass: HTMLElement, private canvas: HTMLCanvasElement, private draw: DrawFn, public minRows = 30, public minCols = 100) {
+  constructor(private glass: HTMLElement, private canvas: HTMLCanvasElement, private draw: DrawFn, public minRows = 30, public minCols = 120) {
     const gl = canvas.getContext('webgl', { antialias: false });
     if (!gl) throw new Error('WebGL is not available');
     this.gl = gl;
@@ -106,14 +107,21 @@ export class Term {
     gl.uniform1i(this.U.tex, 0);
     canvas.addEventListener('pointermove', (e) => this.track(e));
     canvas.addEventListener('pointerleave', () => { this.mouse = [-1, -1]; });
-    canvas.addEventListener('pointerdown', (e) => { this.track(e); const r = this.regionAt(); if (r && r.on) r.on(); });
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const [x, y] = this.mouse;
+      for (let i = this.shown.length - 1; i >= 0; i--) { const r = this.shown[i]; if (r.wheel && x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h) { r.wheel(Math.sign(e.deltaY)); return; } }
+    }, { passive: false });
+    canvas.addEventListener('pointerdown', (e) => { this.track(e); if (this.onPress) this.onPress(); const r = this.regionAt(); if (r && r.on) r.on(); });
     addEventListener('resize', () => this.resize());
     this.resize();
     if (document.fonts) document.fonts.load('20px ' + FONT).then(() => this.resize());
-    this.raf = requestAnimationFrame((n) => this.frame(n));
   }
 
-  destroy() { cancelAnimationFrame(this.raf); }
+  /** For tests: runs the click handler of a region from the last frame. */
+  click(id: string) { const r = this.shown.find((s) => s.id === id); if (!r || !r.on) return false; r.on(); return true; }
+  /** For tests: the screen as lines of text. */
+  screenText() { return this.cells.map((row) => row.map((c) => c.c).join('').trimEnd()); }
 
   private track(e: PointerEvent) {
     const r = this.canvas.getBoundingClientRect();
@@ -121,7 +129,7 @@ export class Term {
   }
   private regionAt(): Region | undefined {
     const [x, y] = this.mouse;
-    for (let i = this.shown.length - 1; i >= 0; i--) { const r = this.shown[i]; if (x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h) return r; }
+    for (let i = this.shown.length - 1; i >= 0; i--) { const r = this.shown[i]; if (r.on && x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h) return r; }
     return undefined;
   }
 
@@ -180,9 +188,12 @@ export class Term {
   }
   /** Marks an area clickable without drawing, so a whole row or panel can respond. */
   region(r: Rect, id: string, on?: () => void) { this.regions.push({ ...r, id, on }); }
+  /** Makes the mouse wheel over an area call fn with -1 or 1. */
+  wheel(r: Rect, id: string, fn: (dir: number) => void) { this.regions.push({ ...r, id, wheel: fn }); }
   /** Draws a bitmap inside a cell rectangle at a whole-number scale, so every source pixel stays square and crisp.
-   *  Centred, or against the rectangle's top. Its colour channels are read by hue, like the text. */
-  pixels(r: Rect, src: Bitmap, top = false) { this.blits.push({ ...r, src, top }); }
+   *  Centred, or against the rectangle's top, and dy screen pixels lower for smooth motion. Its colour channels are
+   *  read by hue, like the text. */
+  pixels(r: Rect, src: Bitmap, top = false, dy = 0) { this.blits.push({ ...r, src, top, dy }); }
 
   wrap(text: string, w: number) {
     const out: string[] = [];
@@ -198,10 +209,11 @@ export class Term {
   }
 
   /* ---------------------------------------------------------------- painting */
-  private paint() {
+  private paint(dt: number) {
     const { ctx, cw, ch, dpr } = this, yo = Math.round((ch - this.font) / 2);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(0,0,0,' + (REDUCED ? 1 : 0.62) + ')';
+    // the old frame fades by elapsed time, so a slow machine shows the same glow and no ghosts of past screens
+    ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(0,0,0,' + (REDUCED ? 1 : (1 - Math.exp(-dt / 16)).toFixed(3)) + ')';
     ctx.fillRect(0, 0, this.text.width, this.text.height);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.font = this.font + 'px ' + FONT + ', monospace'; ctx.textBaseline = 'top';
@@ -210,7 +222,7 @@ export class Term {
     for (const im of this.blits) {
       const rw = im.w * cw * dpr, rh = im.h * ch * dpr, s = Math.max(1, Math.floor(Math.min(rw / im.src.width, rh / im.src.height)));
       const dw = im.src.width * s, dh = im.src.height * s;
-      ctx.drawImage(im.src, Math.round(im.x * cw * dpr + (rw - dw) / 2), Math.round(im.y * ch * dpr + (im.top ? 0 : (rh - dh) / 2)), dw, dh);
+      ctx.drawImage(im.src, Math.round(im.x * cw * dpr + (rw - dw) / 2), Math.round((im.y * ch + im.dy) * dpr + (im.top ? 0 : (rh - dh) / 2)), dw, dh);
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const col = (hue: Hue, b: number) => { const v = Math.round(255 * b); return hue === 1 ? 'rgb(0,' + v + ',0)' : hue === 2 ? 'rgb(0,0,' + v + ')' : 'rgb(' + v + ',0,0)'; };
@@ -233,15 +245,16 @@ export class Term {
     }
   }
 
-  private frame(now: number) {
-    this.raf = requestAnimationFrame((n) => this.frame(n));
+  /** Rebuilds and draws one frame. The game's frame loop calls this while the terminal is on screen. */
+  tick(now: number) {
     const r = this.regionAt();
-    this.hover = r ? r.id : null;
-    this.canvas.style.cursor = r && r.on ? 'pointer' : 'default';
+    this.hover = r && r.on ? r.id : null;
+    this.canvas.style.cursor = this.hover ? 'pointer' : 'default';
     this.clear();
     this.draw(this, now);
     this.shown = this.regions;
-    this.paint();
+    this.paint(now - (this.lastTick || now - 16));
+    this.lastTick = now;
     const { gl, U, palette: P } = this;
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.text);

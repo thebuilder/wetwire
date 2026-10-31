@@ -306,7 +306,10 @@ function npcFire(p, tx, tz, extra?) {
 }
 
 /* ================================================================ log */
+let quietLog = false;
+export function setQuietLog(v) { quietLog = v; }
 export function say(msg, cls) {
+  if (quietLog) return;
   const el = document.createElement('div'); el.textContent = '> ' + msg; if (cls) el.className = cls;
   const log = $('#log'); log.appendChild(el);
   while (log.children.length > 5) log.removeChild(log.firstChild);
@@ -494,7 +497,8 @@ function updateAgent(a, dt) {
   if (T) {
     const dd = Math.hypot(T.x - a.x, T.z - a.z);
     if (dd > range) { a.aim = Math.max(0, a.aim - dt * 3); if (tgt && (!a.path || !a.path.length || a.repath < time)) { a.path = findPath(a.x, a.z, T.x, T.z); a.repath = time + 1; a.run = true; } if (!tgt) a.auto = null; return; }
-    if (tgt && a.path && a.path.length && hasLOS(a, T)) a.path = null;
+    if (tgt && !hasLOS(a, T)) { if (!a.path || !a.path.length || a.repath < time) { a.path = findPath(a.x, a.z, T.x, T.z); a.repath = time + 1; a.run = true; } }
+    else if (tgt && a.path && a.path.length) a.path = null;
     a.yaw = Math.atan2(T.x - a.x, T.z - a.z); a.aim = 1;
     if (a.cd <= 0 && hasLOS(a, T)) { if (agentFire(a, T.x, T.z)) { a.cd = 1 / w.rof; setLastCombat(time); } }
   } else a.aim = Math.max(0, a.aim - dt * 2);

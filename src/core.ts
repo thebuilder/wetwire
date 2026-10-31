@@ -1,42 +1,43 @@
-'use strict';
-const $ = (s) => document.querySelector(s);
-const THREE = window.THREE;
-function fatal(msg) { const it = $('#intro'); if (it) it.remove(); $('#boot').hidden = false; const e = $('#bootErr'); e.textContent = msg; e.hidden = false; $('#startBtn').disabled = true; $('#startBtn').textContent = 'OFFLINE'; }
-if (!THREE) { fatal('The 3D engine did not load. Check your connection, then reload the page.'); return; }
+import * as THREE from 'three';
+
+export const $ = (s: string): any => document.querySelector(s);
+export function fatal(msg) { const it = $('#intro'); if (it) it.remove(); $('#boot').hidden = false; const e = $('#bootErr'); e.textContent = msg; e.hidden = false; $('#startBtn').disabled = true; $('#startBtn').textContent = 'OFFLINE'; }
 
 /* ================================================================ utils */
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const lerp = (a, b, t) => a + (b - a) * t;
-const TAU = Math.PI * 2;
-let SEED = 41017;
-function rng() { SEED |= 0; SEED = SEED + 0x6D2B79F5 | 0; let t = Math.imul(SEED ^ SEED >>> 15, 1 | SEED); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
-const rr = (a, b) => a + (b - a) * rng();
-const ri = (a, b) => Math.floor(a + (b - a + 1) * rng());
-const pick = (a) => a[Math.floor(rng() * a.length)];
-const R = Math.random;
-const Rr = (a, b) => a + (b - a) * R();
-const Rpick = (a) => a[Math.floor(R() * a.length)];
-const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
-const hex3 = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
-const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+export const lerp = (a, b, t) => a + (b - a) * t;
+export const TAU = Math.PI * 2;
+export let SEED = 41017;
+export function setSEED(v: typeof SEED) { return SEED = v; }
+export function rng() { SEED |= 0; SEED = SEED + 0x6D2B79F5 | 0; let t = Math.imul(SEED ^ SEED >>> 15, 1 | SEED); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+export const rr = (a, b) => a + (b - a) * rng();
+export const ri = (a, b) => Math.floor(a + (b - a + 1) * rng());
+export const pick = (a) => a[Math.floor(rng() * a.length)];
+export const R = Math.random;
+export const Rr = (a, b) => a + (b - a) * R();
+export const Rpick = (a) => a[Math.floor(R() * a.length)];
+export const angDiff = (a, b) => { let d = (b - a) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
+export const hex3 = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
+export const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ================================================================ config */
-const CFG = { scale: 0, zoom: 2, dither: 0.55, quant: 1, levels: 6, outlines: true, refl: 0.85, bloom: 0.85, rain: 1, crt: 0.5, exposure: 1, cut: true };
-const ZOOMS = [6, 8, 10, 12, 16];
-const PAL = ['#05090a','#0b1016','#121a24','#1b2533','#263345','#3a4a5e','#5a6b80','#8c9bb0','#c9d3df','#ffffff',
+export const CFG = { scale: 0, zoom: 2, dither: 0.55, quant: 1, levels: 6, outlines: true, refl: 0.85, bloom: 0.85, rain: 1, crt: 0.5, exposure: 1, cut: true };
+export const ZOOMS = [6, 8, 10, 12, 16];
+export const PAL = ['#05090a','#0b1016','#121a24','#1b2533','#263345','#3a4a5e','#5a6b80','#8c9bb0','#c9d3df','#ffffff',
   '#1a0f22','#2d1838','#4a2350','#6e3a78','#2a160c','#4f2a12','#8a4a16','#d0842e','#ffc46b','#fff0c2',
   '#4a1028','#8f1f48','#ff5b82','#ffb0c4','#0b2e2c','#145650','#2f9a8a','#86fadd','#d6fff3',
   '#1b3a12','#5aa83a','#b4f06a','#7a1414','#e0402c','#16307a','#3e7cf0','#9cc4ff',
   '#0c140c','#132012','#1c2b16','#1d1810'];
-const K = { BASIC: 0, BLDG: 1, ROAD: 2, WALK: 3, NEON: 4, BOARD: 5, GLASS: 6, PAD: 7, LAMP: 8, RROAD: 9, DIRT: 10, FENCE: 11, DECAL: 12, WATER: 13 };
+export const K = { BASIC: 0, BLDG: 1, ROAD: 2, WALK: 3, NEON: 4, BOARD: 5, GLASS: 6, PAD: 7, LAMP: 8, RROAD: 9, DIRT: 10, FENCE: 11, DECAL: 12, WATER: 13 };
 
 /* ================================================================ geometry builder */
-class Geo {
+export class Geo {
+  p: number[]; n: number[]; c: number[]; a: number[];
   constructor() { this.p = []; this.n = []; this.c = []; this.a = []; }
   quad(v0, v1, v2, v3, n, c, a) {
     for (const v of [v0, v1, v2, v0, v2, v3]) { this.p.push(v[0], v[1], v[2]); this.n.push(n[0], n[1], n[2]); this.c.push(c[0], c[1], c[2]); this.a.push(a[0], a[1], a[2], a[3]); }
   }
-  box(x0, y0, z0, x1, y1, z1, c, a, bottom) {
+  box(x0, y0, z0, x1, y1, z1, c, a, bottom?) {
     this.quad([x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[1,0,0],c,a);
     this.quad([x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],[-1,0,0],c,a);
     this.quad([x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0],[0,1,0],c,a);
@@ -54,7 +55,7 @@ class Geo {
     for (const v of tris) { this.p.push(v[0], v[1], v[2]); this.n.push(n[0], n[1], n[2]); this.c.push(c[0], c[1], c[2]); this.a.push(a[0], a[1], a[2], a[3]); }
   }
   /* tapered prism: n sides, bottom w0 x d0, top w1 x d1, optional z shift of the top */
-  prism(cx, cz, y0, y1, w0, d0, w1, d1, n, c, a, dz1) {
+  prism(cx, cz, y0, y1, w0, d0, w1, d1, n, c, a, dz1?) {
     const k = 1 / Math.cos(Math.PI / n), off = Math.PI / n, sz = dz1 || 0;
     const ring = (y, w, d, oz) => Array.from({ length: n }, (_, i) => { const t = off + i / n * Math.PI * 2; return [cx + Math.cos(t) * w / 2 * k, y, cz + oz + Math.sin(t) * d / 2 * k]; });
     const B = ring(y0, w0, d0, 0), T = ring(y1, w1, d1, sz), mid = [cx, (y0 + y1) / 2, cz + sz / 2];
@@ -74,7 +75,7 @@ class Geo {
 }
 
 /* ================================================================ shaders */
-const NL = 40;
+export const NL = 40;
 const WVS = `
 attribute vec3 aCol;
 attribute vec4 aux;
@@ -349,7 +350,7 @@ void main(){ vec2 q = gl_PointCoord - 0.5; if (dot(q,q) > 0.25) discard; oColor 
 const FXL_VS = `attribute vec3 aCol; varying vec3 vC; void main(){ vC = aCol; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`;
 const FXL_FS = `precision highp float; layout(location=0) out vec4 oColor; layout(location=1) out vec4 oNormal; varying vec3 vC;
 void main(){ oColor = vec4(vC, 1.); oNormal = vec4(0.); }`;
-const RAIN_VS = `attribute vec4 seed; uniform float uTime; uniform vec3 uCenter; uniform float uRain; varying float vA;
+export const RAIN_VS = `attribute vec4 seed; uniform float uTime; uniform vec3 uCenter; uniform float uRain; varying float vA;
 void main(){
   vec3 box = vec3(90., 46., 90.);
   float sp = 34. * (0.85 + 0.3*seed.w);
@@ -362,9 +363,9 @@ void main(){
   if (vA < 0.5) p = vec3(0.);
   gl_Position = projectionMatrix*viewMatrix*vec4(p,1.);
 }`;
-const RAIN_FS = `precision highp float; layout(location=0) out vec4 oColor; layout(location=1) out vec4 oNormal; varying float vA;
+export const RAIN_FS = `precision highp float; layout(location=0) out vec4 oColor; layout(location=1) out vec4 oNormal; varying float vA;
 void main(){ oColor = vec4(vec3(0.32,0.4,0.58)*0.42*vA, 1.); oNormal = vec4(0.); }`;
-const SPL_VS = `attribute vec4 seed; uniform float uTime; uniform vec3 uCenter; uniform float uRain; uniform float uPPU; varying float vA;
+export const SPL_VS = `attribute vec4 seed; uniform float uTime; uniform vec3 uCenter; uniform float uRain; uniform float uPPU; varying float vA;
 float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }
 void main(){
   float t = uTime*1.7 + seed.w*7.;
@@ -375,19 +376,19 @@ void main(){
   gl_Position = projectionMatrix*viewMatrix*vec4(p,1.);
   gl_PointSize = vA > 0.5 ? max(1., uPPU*0.16) : 0.;
 }`;
-const SPL_FS = `precision highp float; layout(location=0) out vec4 oColor; layout(location=1) out vec4 oNormal; varying float vA;
+export const SPL_FS = `precision highp float; layout(location=0) out vec4 oColor; layout(location=1) out vec4 oNormal; varying float vA;
 void main(){ oColor = vec4(vec3(0.5,0.6,0.8)*0.5*vA, 1.); oNormal = vec4(0.); }`;
 
-const QUAD_VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;
-const BRIGHT_FS = `uniform sampler2D tC; uniform float uTh; varying vec2 vUv;
+export const QUAD_VS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;
+export const BRIGHT_FS = `uniform sampler2D tC; uniform float uTh; varying vec2 vUv;
 void main(){ vec3 c = texture2D(tC, vUv).rgb; float l = max(c.r, max(c.g, c.b)); gl_FragColor = vec4(c * smoothstep(uTh, uTh + 1.2, l), 1.); }`;
-const BLUR_FS = `uniform sampler2D tI; uniform vec2 uDir; varying vec2 vUv;
+export const BLUR_FS = `uniform sampler2D tI; uniform vec2 uDir; varying vec2 vUv;
 void main(){ vec3 s = texture2D(tI, vUv).rgb*0.227;
   s += (texture2D(tI, vUv + uDir*1.385).rgb + texture2D(tI, vUv - uDir*1.385).rgb)*0.316;
   s += (texture2D(tI, vUv + uDir*3.231).rgb + texture2D(tI, vUv - uDir*3.231).rgb)*0.07;
   gl_FragColor = vec4(s, 1.); }`;
-const COPY_FS = `uniform sampler2D tI; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(tI, vUv).rgb, 1.); }`;
-const COMP_FS = `
+export const COPY_FS = `uniform sampler2D tI; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(tI, vUv).rgb, 1.); }`;
+export const COMP_FS = `
 uniform sampler2D tC; uniform sampler2D tN; uniform sampler2D tD;
 uniform vec2 uRes; uniform vec4 uFr; uniform float uNear; uniform float uFar; uniform mat4 uVI;
 uniform float uTime; uniform float uOut; uniform float uRefl; uniform float uDith; uniform float uQ; uniform float uLevels; uniform float uHack; uniform float uExp;
@@ -474,7 +475,7 @@ void main(){
   }
   gl_FragColor = vec4(qc, 1.);
 }`;
-const FINAL_FS = `
+export const FINAL_FS = `
 uniform sampler2D tP; uniform sampler2D tB1; uniform sampler2D tB2;
 uniform vec2 uLow; uniform float uS; uniform vec2 uOff; uniform float uM; uniform vec2 uScreen;
 uniform float uBloom; uniform float uCrt; uniform float uFlash; uniform float uHack;
@@ -496,14 +497,14 @@ void main(){
 }`;
 
 /* ================================================================ renderer */
-const glCanvas = $('#gl'), ov = $('#ov'), ctx = ov.getContext('2d');
-let renderer;
+export const glCanvas = $('#gl'), ov = $('#ov'), ctx = ov.getContext('2d');
+export let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: false, powerPreference: 'high-performance' }); }
-catch (e) { fatal('This browser could not start WebGL. Turn on hardware acceleration and reload.'); return; }
-if (!renderer.capabilities.isWebGL2) { fatal('This prototype needs WebGL 2. Try a current Chrome, Edge, Firefox or Safari.'); return; }
+catch (e) { fatal('This browser could not start WebGL. Turn on hardware acceleration and reload.'); throw e; }
+if (!renderer.capabilities.isWebGL2) { const msg = 'This prototype needs WebGL 2. Try a current Chrome, Edge, Firefox or Safari.'; fatal(msg); throw new Error(msg); }
 renderer.autoClear = false;
 
-const U = {
+export const U = {
   uTime: { value: 0 }, uViewDir: { value: new THREE.Vector3() },
   uFog: { value: new THREE.Vector3(0.032, 0.028, 0.065) }, uFogNear: { value: 200 }, uFogDen: { value: 0.022 },
   uLP: { value: Array.from({ length: NL }, () => new THREE.Vector4()) },
@@ -515,7 +516,7 @@ const U = {
   uSky: { value: new THREE.Vector3(0.045, 0.055, 0.1) }, uKey: { value: new THREE.Vector3(0.09, 0.11, 0.19) },
 };
 const wMat = (defines) => new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, uniforms: U, vertexShader: WVS, fragmentShader: WFS, defines: defines || {} });
-const MAT = { stat: wMat({ STATIC: 1 }), dyn: wMat({}), people: wMat({ PEOPLE: 1 }), tinted: wMat({ TINTED: 1 }) };
-const fxPMat = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, uniforms: U, vertexShader: FXP_VS, fragmentShader: FXP_FS, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
-const fxLMat = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, uniforms: U, vertexShader: FXL_VS, fragmentShader: FXL_FS, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
+export const MAT = { stat: wMat({ STATIC: 1 }), dyn: wMat({}), people: wMat({ PEOPLE: 1 }), tinted: wMat({ TINTED: 1 }) };
+export const fxPMat = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, uniforms: U, vertexShader: FXP_VS, fragmentShader: FXP_FS, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
+export const fxLMat = new THREE.ShaderMaterial({ glslVersion: THREE.GLSL3, uniforms: U, vertexShader: FXL_VS, fragmentShader: FXL_FS, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
 

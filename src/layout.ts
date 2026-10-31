@@ -1,22 +1,30 @@
+import { K, R, Rpick, SEED, clamp, lerp, setSEED } from './core';
+import { AB, G, GW, WORLD, blockCells, walk } from './world_head';
+import { DISTRICT, pole, setDISTRICT } from './city_fns';
+
 /* ================================================================ level framework
    A level is data: a road network (polylines with widths), zones (rects handed to named zone
    generators), features (named set pieces), spots (named points missions refer to) and a lot
    filler (fills every leftover lot between roads). The engine turns that into geometry, a car
    graph, a sidewalk graph for pedestrians, a ground height raster and the walk grid.
    To add a level: defineLevel('id', { ... }) in levels.js, reusing or registering generators. */
-const LEVELS = {}, ZONES = {}, FILLERS = {}, FEATURES = {};
-const AIR = { runway: 1, taxi: 1 };   // paved for aircraft: no traffic, no pavements, no street lamps
-function defineLevel(id, def) { def.id = id; LEVELS[id] = def; }
-const LE = 56, LS = GW + 2 * LE;               // the raster extends LE metres beyond the play area on every side
-const C_LOT = 0, C_ROAD = 1, C_WALK = 2, C_ZONE = 3, C_VOID = 4, C_USED = 5;
-let CTX = new Uint8Array(LS * LS), GHX = new Float32Array(LS * LS);
-let RN = null, PEDS = null, LEVEL = null;
-const lci = (x, z) => { const ix = Math.floor(x) + LE, iz = Math.floor(z) + LE; return ix < 0 || iz < 0 || ix >= LS || iz >= LS ? -1 : iz * LS + ix; };
+export const LEVELS: any = {}, ZONES: any = {}, FILLERS: any = {}, FEATURES: any = {};
+export const AIR = { runway: 1, taxi: 1 };   // paved for aircraft: no traffic, no pavements, no street lamps
+export function defineLevel(id, def) { def.id = id; LEVELS[id] = def; }
+export const LE = 56, LS = GW + 2 * LE;               // the raster extends LE metres beyond the play area on every side
+export const C_LOT = 0, C_ROAD = 1, C_WALK = 2, C_ZONE = 3, C_VOID = 4, C_USED = 5;
+export let CTX = new Uint8Array(LS * LS), GHX = new Float32Array(LS * LS);
+export let RN = null, PEDS = null, LEVEL = null;
+export function setRN(v: typeof RN) { return RN = v; }
+export function setPEDS(v: typeof PEDS) { return PEDS = v; }
+export function setLEVEL(v: typeof LEVEL) { return LEVEL = v; }
+export const lci = (x, z) => { const ix = Math.floor(x) + LE, iz = Math.floor(z) + LE; return ix < 0 || iz < 0 || ix >= LS || iz >= LS ? -1 : iz * LS + ix; };
 function ghAt(x, z) { const i = lci(x, z); return i < 0 ? 0 : GHX[i]; }
-function setGround(x0, z0, x1, z1, h) { for (let z = Math.floor(z0); z < Math.ceil(z1); z++) for (let x = Math.floor(x0); x < Math.ceil(x1); x++) { const i = lci(x + 0.5, z + 0.5); if (i >= 0) GHX[i] = h; } }
-function inPlay(x, z, m) { const b = LEVEL ? LEVEL.bounds : [0, 0, GW, GW]; m = m || 0; return x >= b[0] + m && z >= b[1] + m && x <= b[2] - m && z <= b[3] - m; }
+export function groundY(x, z) { return WORLD.kind === 'city' ? ghAt(x, z) : 0; }
+export function setGround(x0, z0, x1, z1, h) { for (let z = Math.floor(z0); z < Math.ceil(z1); z++) for (let x = Math.floor(x0); x < Math.ceil(x1); x++) { const i = lci(x + 0.5, z + 0.5); if (i >= 0) GHX[i] = h; } }
+export function inPlay(x, z, m?) { const b = LEVEL ? LEVEL.bounds : [0, 0, GW, GW]; m = m || 0; return x >= b[0] + m && z >= b[1] + m && x <= b[2] - m && z <= b[3] - m; }
 /* tilted quad helper: centre, length along dir, width, angle */
-function rquad(cx, cz, len, wid, th, y, col, aux) {
+export function rquad(cx, cz, len, wid, th, y, col, aux) {
   const dx = Math.cos(th), dz = Math.sin(th), nx = -dz, nz = dx, hl = len / 2, hw = wid / 2;
   const p = (a, b) => [cx + dx * a + nx * b, y, cz + dz * a + nz * b];
   G.quad(p(-hl, hw), p(hl, hw), p(hl, -hw), p(-hl, -hw), [0, 1, 0], col, aux);
@@ -30,7 +38,7 @@ function segHit(a, b, c, d) {
   const e = 1e-4; if (t < -e || t > 1 + e || u < -e || u > 1 + e) return null;
   return { t: clamp(t, 0, 1), u: clamp(u, 0, 1), p: [a[0] + r[0] * t, a[1] + r[1] * t] };
 }
-function buildRoadNet(roads) {
+export function buildRoadNet(roads) {
   const segs = [];
   for (const r of roads) for (let i = 0; i < r.pts.length - 1; i++) segs.push({ a: r.pts[i], b: r.pts[i + 1], w: r.w, kind: r.kind || 'street', cuts: [0, 1] });
   // snap endpoints that stop just short of (or just past) another road onto it, so authors can be sloppy
@@ -53,7 +61,7 @@ function buildRoadNet(roads) {
   const nodes = [], findNode = (p) => { for (let k = 0; k < nodes.length; k++) if (Math.hypot(nodes[k].x - p[0], nodes[k].z - p[1]) < 1.2) return k; nodes.push({ x: p[0], z: p[1], adj: [], padj: [], r: 0, edges: [] }); return nodes.length - 1; };
   const edges = [];
   for (const s of segs) {
-    const cuts = [...new Set(s.cuts.map((t) => Math.round(t * 1e4) / 1e4))].sort((x, y) => x - y);
+    const cuts = [...new Set<number>(s.cuts.map((t) => Math.round(t * 1e4) / 1e4))].sort((x, y) => x - y);
     for (let k = 0; k < cuts.length - 1; k++) {
       const pa = [lerp(s.a[0], s.b[0], cuts[k]), lerp(s.a[1], s.b[1], cuts[k])], pb = [lerp(s.a[0], s.b[0], cuts[k + 1]), lerp(s.a[1], s.b[1], cuts[k + 1])];
       if (Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) < 1) continue;
@@ -88,7 +96,7 @@ function buildRoadNet(roads) {
   const exits = nodes.map((n, i) => i).filter((i) => nodes[i].adj.length === 1 && !inPlay(nodes[i].x, nodes[i].z, -4));
   return { nodes, edges, exits };
 }
-const edgeOf = (a, b) => RN.nodes[a].edges.find((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a));
+export const edgeOf = (a, b) => RN.nodes[a].edges.find((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a));
 
 /* ---------------------------------------------------------------- rasterize roads, sidewalks, zones, voids */
 function rasterize(L) {
@@ -121,7 +129,7 @@ function rasterize(L) {
   if (L.raster) L.raster();
 }
 /* greedy rectangle cover of cells matching a test; calls fn(x0,z0,x1,z1) in world metres */
-function coverRects(test, maxW, maxH, fn, mark) {
+export function coverRects(test, maxW, maxH, fn, mark?) {
   const used = new Uint8Array(LS * LS);
   for (let iz = 0; iz < LS; iz++) for (let ix = 0; ix < LS; ix++) {
     const i = iz * LS + ix; if (used[i] || !test(i)) continue;
@@ -147,7 +155,7 @@ function buildPeds() {
       segs.push(s); ends.push({ s: segs.length - 1, end: 0, node: e.a, p: p0 }, { s: segs.length - 1, end: 1, node: e.b, p: p1 });
     }
   }
-  const byNode = {};
+  const byNode: any = {};
   for (const en of ends) (byNode[en.node] = byNode[en.node] || []).push(en);
   for (const k in byNode) {
     const g = byNode[k];
@@ -159,8 +167,8 @@ function buildPeds() {
   }
   return segs;
 }
-function pedPos(seg, s) { const g = PEDS[seg], f = clamp(s / g.len, 0, 1); return [lerp(g.p0[0], g.p1[0], f), lerp(g.p0[1], g.p1[1], f), (g.p1[0] - g.p0[0]) / g.len, (g.p1[1] - g.p0[1]) / g.len]; }
-function nearestPed(x, z, insideOnly) {
+export function pedPos(seg, s) { const g = PEDS[seg], f = clamp(s / g.len, 0, 1); return [lerp(g.p0[0], g.p1[0], f), lerp(g.p0[1], g.p1[1], f), (g.p1[0] - g.p0[0]) / g.len, (g.p1[1] - g.p0[1]) / g.len]; }
+export function nearestPed(x, z, insideOnly) {
   let best = -1, bd = 1e9, bs = 0;
   PEDS.forEach((g, i) => {
     if (insideOnly && !g.inside) return;
@@ -169,7 +177,7 @@ function nearestPed(x, z, insideOnly) {
   });
   return [best, bs];
 }
-function randomPed() { const ins = PEDS.map((g, i) => i).filter((i) => PEDS[i].inside); const i = Rpick(ins); return [i, R() * PEDS[i].len]; }
+export function randomPed() { const ins = PEDS.map((g, i) => i).filter((i) => PEDS[i].inside); const i = Rpick(ins); return [i, R() * PEDS[i].len]; }
 
 /* ---------------------------------------------------------------- geometry for roads */
 function drawRoads(L) {
@@ -220,8 +228,8 @@ function placeUplinks(L) {
 }
 
 /* ---------------------------------------------------------------- build */
-function buildLevel(L) {
-  LEVEL = L; DISTRICT = L.style || 'downtown'; SEED = L.seed || 1;
+export function buildLevel(L) {
+  LEVEL = L; setDISTRICT(L.style || 'downtown'); setSEED(L.seed || 1);
   RN = buildRoadNet(L.roads);
   rasterize(L);
   PEDS = buildPeds();

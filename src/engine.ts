@@ -1,6 +1,12 @@
-const VN_MAX = 600;
-const vnGeo = new THREE.BufferGeometry();
-const vnPos = new Float32Array(VN_MAX * 3), vnCol = new Float32Array(VN_MAX * 3), vnSize = new Float32Array(VN_MAX), vnShape = new Float32Array(VN_MAX);
+import * as THREE from 'three';
+import { $, BLUR_FS, BRIGHT_FS, CFG, COMP_FS, COPY_FS, FINAL_FS, PAL, QUAD_VS, REDUCED, Rr, TAU, U, ZOOMS, clamp, glCanvas, hex3, ov, renderer } from './core';
+import { GW, cellOk, walk } from './world_head';
+import { AIR, RN, edgeOf } from './layout';
+import { HK, vecScene } from './world_load';
+
+export const VN_MAX = 600;
+export const vnGeo = new THREE.BufferGeometry();
+export const vnPos = new Float32Array(VN_MAX * 3), vnCol = new Float32Array(VN_MAX * 3), vnSize = new Float32Array(VN_MAX), vnShape = new Float32Array(VN_MAX);
 vnGeo.setAttribute('position', new THREE.BufferAttribute(vnPos, 3).setUsage(THREE.DynamicDrawUsage));
 vnGeo.setAttribute('aCol', new THREE.BufferAttribute(vnCol, 3).setUsage(THREE.DynamicDrawUsage));
 vnGeo.setAttribute('aSize', new THREE.BufferAttribute(vnSize, 1).setUsage(THREE.DynamicDrawUsage));
@@ -15,25 +21,25 @@ const vnPoints = new THREE.Points(vnGeo, vnMat); vnPoints.renderOrder = 10; vnPo
 const quadScene = new THREE.Scene(), quadCam = new THREE.Camera();
 const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)); quad.frustumCulled = false; quadScene.add(quad);
 const qm = (fs, uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: QUAD_VS, fragmentShader: fs, depthTest: false, depthWrite: false });
-const M_BR = qm(BRIGHT_FS, { tC: { value: null }, uTh: { value: 1.0 } });
-const M_BLUR = qm(BLUR_FS, { tI: { value: null }, uDir: { value: new THREE.Vector2() } });
-const M_COPY = qm(COPY_FS, { tI: { value: null } });
+export const M_BR = qm(BRIGHT_FS, { tC: { value: null }, uTh: { value: 1.0 } });
+export const M_BLUR = qm(BLUR_FS, { tI: { value: null }, uDir: { value: new THREE.Vector2() } });
+export const M_COPY = qm(COPY_FS, { tI: { value: null } });
 const palVec = Array.from({ length: 48 }, (_, i) => { const c = hex3(PAL[Math.min(i, PAL.length - 1)]); return new THREE.Vector3(c[0], c[1], c[2]); });
-const M_COMP = qm(COMP_FS, {
+export const M_COMP = qm(COMP_FS, {
   tC: { value: null }, tN: { value: null }, tD: { value: null }, uRes: { value: new THREE.Vector2() }, uFr: { value: new THREE.Vector4() },
   uNear: { value: 1 }, uFar: { value: 600 }, uVI: { value: new THREE.Matrix4() }, uTime: U.uTime, uOut: { value: 1 }, uRefl: { value: 0.85 },
   uDith: { value: 0.55 }, uQ: { value: 1 }, uLevels: { value: 6 }, uHack: { value: 0 }, uExp: { value: 1 }, uPal: { value: palVec }, uPalN: { value: PAL.length },
   uFog: U.uFog, uUpV: { value: new THREE.Vector3() },
 });
-const M_FIN = qm(FINAL_FS, { tP: { value: null }, tB1: { value: null }, tB2: { value: null }, uLow: { value: new THREE.Vector2() }, uS: { value: 3 }, uOff: { value: new THREE.Vector2() },
+export const M_FIN = qm(FINAL_FS, { tP: { value: null }, tB1: { value: null }, tB2: { value: null }, uLow: { value: new THREE.Vector2() }, uS: { value: 3 }, uOff: { value: new THREE.Vector2() },
   uM: { value: 2 }, uScreen: { value: new THREE.Vector2() }, uBloom: { value: 0.85 }, uCrt: { value: 0.5 }, uFlash: { value: 0 }, uHack: { value: 0 } });
-function pass(mat, rt) { quad.material = mat; renderer.setRenderTarget(rt); renderer.render(quadScene, quadCam); }
+export function pass(mat, rt) { quad.material = mat; renderer.setRenderTarget(rt); renderer.render(quadScene, quadCam); }
 
-const MG = 2;
-let SW = 0, SH = 0, DPR = 1, S = 3, LW = 0, LH = 0, PPU = 10;
-const RT = {};
-function mkRT(w, h, filter, type) { return new THREE.WebGLRenderTarget(w, h, { minFilter: filter, magFilter: filter, type: type || THREE.UnsignedByteType, depthBuffer: false, generateMipmaps: false }); }
-function resize() {
+export const MG = 2;
+export let SW = 0, SH = 0, DPR = 1, S = 3, LW = 0, LH = 0, PPU = 10;
+export const RT: any = {};
+function mkRT(w, h, filter, type?) { return new THREE.WebGLRenderTarget(w, h, { minFilter: filter, magFilter: filter, type: type || THREE.UnsignedByteType, depthBuffer: false, generateMipmaps: false }); }
+export function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, 2);
   renderer.setPixelRatio(DPR);
   renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -46,8 +52,8 @@ function resize() {
   for (const k in RT) RT[k].dispose();
   const mrt = new THREE.WebGLMultipleRenderTargets(LW, LH, 2);
   for (const t of mrt.texture) { t.minFilter = t.magFilter = THREE.NearestFilter; t.type = THREE.HalfFloatType; t.generateMipmaps = false; }
-  mrt.depthTexture = new THREE.DepthTexture(LW, LH); mrt.depthTexture.type = THREE.UnsignedIntType;
-  mrt.depthTexture.minFilter = mrt.depthTexture.magFilter = THREE.NearestFilter;
+  const mrtDepth = (mrt as any).depthTexture = new THREE.DepthTexture(LW, LH); mrtDepth.type = THREE.UnsignedIntType;
+  mrtDepth.minFilter = mrtDepth.magFilter = THREE.NearestFilter;
   RT.scene = mrt;
   RT.pix = mkRT(LW, LH, THREE.NearestFilter);
   const bw = Math.max(2, LW >> 1), bh = Math.max(2, LH >> 1);
@@ -59,15 +65,18 @@ function resize() {
 }
 
 /* ================================================================ cameras */
-const vecCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 600);
-const snapCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 600);
-const camT = new THREE.Vector3(41, 0, 182);
-let camYaw = Math.PI / 4, camYawTo = Math.PI / 4;
-const PITCH = Math.PI / 6, CAMD = 230;
-const OFF = new THREE.Vector2();
-const _v = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _f = new THREE.Vector3();
-let shake = 0;
-function computeCams() {
+export const vecCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 600);
+export const snapCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 600);
+export const camT = new THREE.Vector3(41, 0, 182);
+export let camYaw = Math.PI / 4, camYawTo = Math.PI / 4;
+export function setCamYaw(v: typeof camYaw) { return camYaw = v; }
+export function setCamYawTo(v: typeof camYawTo) { return camYawTo = v; }
+export const PITCH = Math.PI / 6, CAMD = 230;
+export const OFF = new THREE.Vector2();
+export const _v = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _f = new THREE.Vector3();
+export let shake = 0;
+export function setShake(v: typeof shake) { return shake = v; }
+export function computeCams() {
   const sx = shake > 0 && !REDUCED ? Rr(-1, 1) * shake * 0.6 : 0, sz = shake > 0 && !REDUCED ? Rr(-1, 1) * shake * 0.6 : 0;
   _v.set(Math.sin(camYaw) * Math.cos(PITCH), Math.sin(PITCH), Math.cos(camYaw) * Math.cos(PITCH)).multiplyScalar(CAMD);
   const tx = camT.x + sx, tz = camT.z + sz;
@@ -89,12 +98,12 @@ function computeCams() {
   U.uFogNear.value = CAMD - 8;
   U.uCenter.value.set(camT.x, 0, camT.z);
 }
-function toScreen(x, y, z, out) {
+export function toScreen(x, y, z, out) {
   _v.set(x, y, z).project(vecCam);
   out[0] = (_v.x * 0.5 + 0.5) * SW; out[1] = (1 - (_v.y * 0.5 + 0.5)) * SH; out[2] = _v.z;
   return out;
 }
-function groundAt(px, py, y) {
+export function groundAt(px, py, y?) {
   const nx = px / SW * 2 - 1, ny = 1 - py / SH * 2;
   const o = new THREE.Vector3(nx, ny, -1).unproject(vecCam);
   const t = ((y || 0) - o.y) / _f.y;
@@ -107,7 +116,7 @@ let stamp = 0;
 const hI = new Int32Array(GW * GW * 4), hF = new Float32Array(GW * GW * 4); let hn = 0;
 function hpush(i, f) { let k = hn++; while (k > 0) { const p = (k - 1) >> 1; if (hF[p] <= f) break; hI[k] = hI[p]; hF[k] = hF[p]; k = p; } hI[k] = i; hF[k] = f; }
 function hpop() { const top = hI[0]; const li = hI[--hn], lf = hF[hn]; let k = 0; for (;;) { let c = k * 2 + 1; if (c >= hn) break; if (c + 1 < hn && hF[c + 1] < hF[c]) c++; if (hF[c] >= lf) break; hI[k] = hI[c]; hF[k] = hF[c]; k = c; } hI[k] = li; hF[k] = lf; return top; }
-function nearestOpen(x, z, rad) {
+export function nearestOpen(x, z, rad) {
   if (cellOk(x, z)) return [x, z];
   for (let r = 1; r <= rad; r++) for (let a = 0; a < 16; a++) { const xx = x + Math.cos(a / 16 * TAU) * r, zz = z + Math.sin(a / 16 * TAU) * r; if (cellOk(xx, zz)) return [Math.floor(xx) + 0.5, Math.floor(zz) + 0.5]; }
   return null;
@@ -117,7 +126,7 @@ function losWalk(ax, az, bx, bz) {
   for (let i = 1; i <= n; i++) { const x = ax + (bx - ax) * i / n, z = az + (bz - az) * i / n; if (!cellOk(x + 0.22, z + 0.22) || !cellOk(x - 0.22, z - 0.22) || !cellOk(x + 0.22, z - 0.22) || !cellOk(x - 0.22, z + 0.22)) return false; }
   return true;
 }
-function findPath(sx, sz, tx, tz) {
+export function findPath(sx, sz, tx, tz) {
   const s0 = nearestOpen(sx, sz, 4), t0 = nearestOpen(tx, tz, 8);
   if (!s0 || !t0) return null;
   if (losWalk(sx, sz, t0[0], t0[1])) return [{ x: t0[0], z: t0[1] }];
@@ -156,7 +165,7 @@ function findPath(sx, sz, tx, tz) {
   return out;
 }
 /* shortest drive over the road graph (node ids); returns the nodes after "from", ending with "to" */
-function roadRoute(from, to) {
+export function roadRoute(from, to) {
   if (!RN || from === to || from == null || to == null) return [];
   const n = RN.nodes.length, dist = new Float64Array(n).fill(1e9), prev = new Int32Array(n).fill(-1), done = new Uint8Array(n);
   dist[from] = 0;
@@ -169,15 +178,15 @@ function roadRoute(from, to) {
   while (c >= 0 && c !== from) { out.push(c); c = prev[c]; }
   return c === from ? out.reverse() : [];
 }
-function routeLen(from, r) { let l = 0, a = from; for (const b of r) { l += Math.hypot(RN.nodes[b].x - RN.nodes[a].x, RN.nodes[b].z - RN.nodes[a].z); a = b; } return l; }
-function nearestNode(x, z) {
+export function routeLen(from, r) { let l = 0, a = from; for (const b of r) { l += Math.hypot(RN.nodes[b].x - RN.nodes[a].x, RN.nodes[b].z - RN.nodes[a].z); a = b; } return l; }
+export function nearestNode(x, z) {
   if (!RN) return 0;
   let best = 0, bd = 1e9;
   RN.nodes.forEach((n, i) => { if (!n.adj.length) return; const d = Math.hypot(n.x - x, n.z - z); if (d < bd) { bd = d; best = i; } });
   return best;
 }
 /* nearest point on a drivable edge */
-function nearestRoad(x, z) {
+export function nearestRoad(x, z) {
   let best = null, bd = 1e9;
   for (const e of RN.edges) {
     if (e.kind === 'alley' || e.kind === 'path' || AIR[e.kind]) continue;
@@ -189,13 +198,13 @@ function nearestRoad(x, z) {
 }
 
 /* ================================================================ audio */
-const AU = { ctx: null, master: null, music: null, sfx: null, buf: {}, on: false, cur: null, src: null, gain: null, pending: null, loaded: false, act: {} };
-const SONGS = {
-  boardroom: { g: 1.2, ls: 45.714286, le: 91.428571 }, infiltration: { g: 1.35, ls: 38.4, le: 76.8 },
+export const AU = { ctx: null, master: null, music: null, sfx: null, buf: {}, on: false, cur: null, src: null, gain: null, pending: null, loaded: false, act: {} };
+export const SONGS = {
+  theme: { g: 1.2, ls: 50, le: 110 }, infiltration: { g: 1.35, ls: 38.4, le: 76.8 },
   danger: { g: 1.0, ls: 25.6, le: 51.2 }, complete: { g: 1.15 }, failed: { g: 1.8 },
 };
 const SFXN = ['ack', 'siren', 'minigun', 'pistol', 'laser', 'rocket', 'explosion', 'mindjack', 'hack', 'ui', 'alarm', 'zap', 'impact', 'door', 'scream', 'flame', 'ignite'];
-function audioInit() {
+export function audioInit() {
   if (AU.ctx) { if (AU.ctx.state === 'suspended') AU.ctx.resume(); return; }
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
   AU.ctx = new C();
@@ -207,14 +216,14 @@ function audioInit() {
     .then((ab) => AU.ctx.decodeAudioData(ab)).then((b) => { AU.buf[n] = b; if (AU.pending === n) { AU.cur = null; playMusic(n); } }).catch(() => {})))
     .then(() => { AU.loaded = true; });
 }
-function setSound(on) {
+export function setSound(on) {
   AU.on = on;
   if (on) audioInit();
   if (AU.master) AU.master.gain.setTargetAtTime(on ? 0.9 : 0, AU.ctx.currentTime, 0.05);
   $('#sndBtn').textContent = on ? 'SOUND: ON' : 'SOUND: OFF'; $('#sndBtn').classList.toggle('on', on);
   $('#bSnd').classList.toggle('on', !on);
 }
-function playMusic(name, fade) {
+export function playMusic(name, fade?) {
   if (!AU.ctx || AU.cur === name) return;
   fade = fade == null ? 1.2 : fade;
   const t = AU.ctx.currentTime;
@@ -229,7 +238,7 @@ function playMusic(name, fade) {
   s.connect(g); g.connect(AU.music); s.start(t);
   AU.src = s; AU.gain = g;
 }
-function sfx(name, x, z, vol, rate) {
+export function sfx(name, x, z, vol, rate?) {
   if (!AU.ctx || !AU.on) return; const b = AU.buf[name]; if (!b) return;
   let att = 1;
   if (x != null) { const d = Math.hypot(x - camT.x, z - camT.z); att = clamp(1 - (d - 12) / 55, 0, 1); }
@@ -246,4 +255,4 @@ function sfx(name, x, z, vol, rate) {
   s.connect(g); g.connect(AU.sfx); s.start();
   AU.act[name] = (AU.act[name] || 0) + 1; s.onended = () => { AU.act[name]--; };
 }
-
+function labSync() { $('#vScale').textContent = CFG.scale ? CFG.scale + 'x' : 'auto ' + S + 'x'; $('#vZoom').textContent = PPU + ' px/m'; }

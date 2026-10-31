@@ -1,3 +1,9 @@
+import { K, TAU, clamp, lerp, pick, rng, rr } from './core';
+import { AB, DARK, G, GW, NEONS, WORLD, addBarrel, blockCells, cellOk } from './world_head';
+import { CONT_COLS, addLight, bench, cbox, floodTall, genBuilding, genCampusLab, genCorp, genDorm, genField, genGreen, genMarket, genPark, genParking, genPlaza, genYard, lampPost, lawn, path, solid } from './city_fns';
+import { fenceRun, flowerBed, genCompound, hedge, leafTree, tree } from './world_build';
+import { CTX, C_ROAD, C_VOID, FEATURES, FILLERS, LE, LEVEL, RN, ZONES, coverRects, defineLevel, lci } from './layout';
+
 /* ================================================================ level content
    Generators register by name and levels refer to them as data:
      ZONES[type](x0, z0, x1, z1, zone)   a set piece filling a rect the level places
@@ -11,16 +17,16 @@ function dumpster(x, z, ax) {
   G.box(x - w / 2, 0.15, z - d / 2, x + w / 2, 1.3, z + d / 2, c, AB); G.box(x - w / 2 - 0.05, 1.3, z - d / 2 - 0.05, x + w / 2 + 0.05, 1.38, z + d / 2 + 0.05, c.map((v) => v * 0.7), AB);
   blockCells(x - w / 2, z - d / 2, x + w / 2, z + d / 2, true);
 }
-function crate(x, z, s) { s = s || rr(0.9, 1.4); G.box(x - s / 2, 0.15, z - s / 2, x + s / 2, 0.15 + s * 0.8, z + s / 2, [0.24, 0.2, 0.13], AB); blockCells(x - s / 2, z - s / 2, x + s / 2, z + s / 2, true); }
+export function crate(x, z, s?) { s = s || rr(0.9, 1.4); G.box(x - s / 2, 0.15, z - s / 2, x + s / 2, 0.15 + s * 0.8, z + s / 2, [0.24, 0.2, 0.13], AB); blockCells(x - s / 2, z - s / 2, x + s / 2, z + s / 2, true); }
 /* facade bounds for genBuilding: only sides that face a street get shopfronts and signs */
 const facadeB = (x0, z0, x1, z1, o) => [o.open.w ? x0 : x0 - 1, o.open.n ? z0 : z0 - 1, o.open.e ? x1 : x1 + 1, o.open.s ? z1 : z1 + 1];
 /* oriented box: u runs along the axis, v across it */
-function obox(ax, u0, y0, v0, u1, y1, v1, c, a) { if (ax === 'x') G.box(Math.min(u0, u1), y0, Math.min(v0, v1), Math.max(u0, u1), y1, Math.max(v0, v1), c, a); else G.box(Math.min(v0, v1), y0, Math.min(u0, u1), Math.max(v0, v1), y1, Math.max(u0, u1), c, a); }
-const opt = (ax, u, v) => ax === 'x' ? [u, v] : [v, u];
+export function obox(ax, u0, y0, v0, u1, y1, v1, c, a) { if (ax === 'x') G.box(Math.min(u0, u1), y0, Math.min(v0, v1), Math.max(u0, u1), y1, Math.max(v0, v1), c, a); else G.box(Math.min(v0, v1), y0, Math.min(u0, u1), Math.max(v0, v1), y1, Math.max(u0, u1), c, a); }
+export const opt = (ax, u, v) => ax === 'x' ? [u, v] : [v, u];
 
 /* ---------------------------------------------------------------- warehouses */
 const WH_COLS = [[0.2, 0.21, 0.22], [0.24, 0.2, 0.16], [0.16, 0.2, 0.22], [0.22, 0.22, 0.19], [0.26, 0.15, 0.12]];
-function ridgeRoof(x0, z0, x1, z1, h, rh, col) {
+export function ridgeRoof(x0, z0, x1, z1, h, rh, col) {
   const alongX = x1 - x0 >= z1 - z0, xm = (x0 + x1) / 2, zm = (z0 + z1) / 2, IN = [xm, h - 1, zm];
   if (alongX) {
     G.poly([[x0, h, z0], [x1, h, z0], [x1, h + rh, zm], [x0, h + rh, zm]], col, AB, IN);
@@ -32,7 +38,7 @@ function ridgeRoof(x0, z0, x1, z1, h, rh, col) {
     G.poly([[x0, h, z0], [x1, h, z0], [xm, h + rh, z0]], col, AB, IN); G.poly([[x0, h, z1], [x1, h, z1], [xm, h + rh, z1]], col, AB, IN);
   }
 }
-function genWarehouse(x0, z0, x1, z1, o, h) {
+export function genWarehouse(x0, z0, x1, z1, o, h) {
   h = h || Math.round(rr(6, 9));
   const col = pick(WH_COLS).map((v) => v * rr(0.85, 1.1));
   solid(x0, 0, z0, x1, h, z1, col, AB); blockCells(x0, z0, x1, z1);
@@ -193,7 +199,7 @@ FEATURES.water = (f) => {
 FEATURES.crane = (f) => quayCrane(f.x, f.z, f.ax, f.dir);
 /* fuel drums (small, in clusters) and fuel tanks (big) that explode when shot */
 FEATURES.drums = (f) => { for (const p of f.pts) { if (f.big) addBarrel(p[0], p[1], true); else drumCluster(p[0], p[1], f.n || 3); } };
-function drumCluster(x, z, n) { for (let i = 0; i < n; i++) { const a = i * 2.1 + rng(), d = i ? 0.95 : 0; const bx = x + Math.sin(a) * d, bz = z + Math.cos(a) * d; if (cellOk(bx, bz)) addBarrel(bx, bz, false); } }
+export function drumCluster(x, z, n) { for (let i = 0; i < n; i++) { const a = i * 2.1 + rng(), d = i ? 0.95 : 0; const bx = x + Math.sin(a) * d, bz = z + Math.cos(a) * d; if (cellOk(bx, bz)) addBarrel(bx, bz, false); } }
 FEATURES.ship = (f) => ship(f.rect[0], f.rect[1], f.rect[2], f.rect[3], f.col || [0.32, 0.08, 0.07]);
 
 /* ---------------------------------------------------------------- elevated monorail above a street */

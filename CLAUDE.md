@@ -6,32 +6,42 @@ when in doubt, ask "how did Syndicate do it?" before inventing a new system.
 
 ## Commands
 
-- `npm run build`: writes `dist/index.html` and copies `audio/export/*.ogg` to `dist/audio/`. Fails on syntax errors and on duplicate top-level names.
-- `npm run dev`: build, then serve `dist/` on http://localhost:8765.
-- `npm test`: build, then headless smoke tests. `node tests/run.mjs squad traffic` runs only those scenarios. Screenshots go to `tests/shots/`; look at them after UI or rendering changes.
+- `npm run dev`: Vite dev server on http://localhost:8765. The terminal mockup is at `/mockups/terminal.html`.
+- `npm run build`: writes one self-contained `dist/index.html` (Three.js included) and copies `audio/export/*.ogg` to `dist/audio/`.
+- `npm run typecheck`: `tsc --noEmit`. Keep it at zero errors.
+- `npm test`: typecheck, build, then headless smoke tests. `node tests/run.mjs squad traffic` runs only those scenarios. Screenshots go to `tests/shots/`; look at them after UI or rendering changes.
 
 ## How the code fits together
 
-- The game is ONE page. `scripts/build.mjs` concatenates `src/*.js` in the `ORDER` list inside a single IIFE, after `src/head.html` (markup and all CSS). Every file shares one scope: no imports, no modules. Add a new file by adding it to `ORDER`.
-- Because scope is shared, two top-level functions or consts with the same name silently override each other. The build refuses duplicates; pick distinctive names (`genAirTerminal`, not `genTerminal`).
-- `window.__wetwire` (end of `src/game3.js`) exposes internals for tests and debugging. Add anything a test needs there.
+- TypeScript ES modules, bundled by Vite into ONE page. `index.html` holds the markup and game CSS, and `src/main.ts` is the entry.
+- Types are loose so far: `strict` is off and most game code is implicitly `any`. Tighten file by file; new code gets real types (see `src/terminal/`).
+- Load order matters. Top-level `const`s and statements run in module order, so a module pulled in early through an import cycle can hit a not-yet-initialized `const` from a later one. Keep the world layer (up to `engine.ts`) free of imports from the game layer, and only import `main.ts` from nowhere. `main.ts` also imports the modules that register themselves as they load (`levels`, `levels2`, `missions`).
+- Imported `let`s are read-only, so a `let` written from another file has a setter beside it (`heat` and `setHeat`). Reads stay plain.
+- `window.__wetwire` (end of `src/main.ts`) exposes internals for tests and debugging. Add anything a test needs there.
 - Simulation runs through `step(dt)`; tests drive it directly (`for (...) w.step(1 / 30)`) instead of waiting in real time.
 
 | File | Holds |
 | --- | --- |
-| `core.js` | renderer, shaders (MRT, reflections, palette, CRT), uniforms |
-| `world_head.js`, `city_fns.js`, `world_build.js` | world grid, ground height, building and prop generators |
-| `layout.js` | level framework: `defineLevel`, zones, fillers, features, road graph `RN`, sidewalks `PEDS` |
-| `levels.js`, `levels2.js` | the levels (downtown, docks, campus, warrens, airfield) and their generators |
-| `models.js` | instanced meshes: people, cars, turrets, barrels, rain |
-| `world_load.js` | `loadWorld`: builds a level into the scene |
-| `engine.js` | routing (Dijkstra on `RN`), ground queries, audio loading and `sfx()` |
-| `game1.js` | campaign data: `WEAPONS`, `GEAR`, `RESEARCH`, `MISSIONS`, mods; mission setup |
-| `game2.js` | agents, NPC AI, police, combat, hacking, vehicles |
-| `chaos.js` | fire, explosive barrels, panic; the scanner |
-| `missions.js` | per-mission scripts (`SCRIPTS[id]`), territory and taxes, intel |
-| `icons.js` | generated weapon icon images; never edit by hand |
-| `game3.js` | mission flow, HUD, terminal pages (contracts, territory, squad, research, system), debrief, input |
+| `core.ts` | renderer, shaders (MRT, reflections, palette, CRT), uniforms |
+| `world_head.ts`, `city_fns.ts`, `world_build.ts` | world grid, barrels, building and prop generators |
+| `layout.ts` | level framework: `defineLevel`, zones, fillers, features, ground height, road graph `RN`, sidewalks `PEDS` |
+| `levels.ts`, `levels2.ts` | the levels (downtown, docks, campus, warrens, airfield) and their generators |
+| `models.ts` | instanced meshes: people, cars, turrets, barrels, rain |
+| `world_load.ts` | `loadWorld`: builds a level into the scene |
+| `engine.ts` | routing (Dijkstra on `RN`), ground queries, audio loading and `sfx()` |
+| `campaign.ts` | campaign data: `WEAPONS`, `GEAR`, `RESEARCH`, `MISSIONS`, mods; the save |
+| `setup.ts` | mission state and setup, spawning, driving |
+| `sim.ts` | agents, NPC AI, police, combat, hacking, vehicles |
+| `chaos.ts` | fire, explosive barrels, panic; the scanner |
+| `missions.ts` | per-mission scripts (`SCRIPTS[id]`), territory and taxes, intel |
+| `icons.ts` | generated weapon icon images; never edit by hand |
+| `flow.ts`, `commands.ts`, `input.ts` | mission flow and debrief data, squad orders, mouse and keyboard |
+| `hud.ts`, `tactical.ts` | mission HUD, lab panel; tactical pause, field tips, vision cones |
+| `pages.ts` | current DOM company terminal (contracts, territory, squad, research, system), to be replaced |
+| `present.ts` | per-frame instance upload and the 2D overlay |
+| `main.ts` | frame loop, opening sequence, boot, `window.__wetwire` |
+| `terminal/term.ts` | new terminal: immediate-mode character grid and WebGL CRT pass |
+| `terminal/art.ts`, `terminal/logo.ts` | game art to phosphor bitmap; the spinning Kessel logo |
 
 ## Publishing
 
@@ -49,13 +59,13 @@ node ../bleep-kit/packages/cli/src/index.ts analyze <id> --project audio   # ren
 node ../bleep-kit/packages/cli/src/index.ts export --project audio          # writes audio/export/*.ogg
 ```
 
-Commit the exported `.ogg` files; the build only copies them. A new sound also needs its name in `SFXN`
-in `src/engine.js`. The owner dislikes bell-like and laser-like timbres in music, and constant beeps.
+Commit the exported `.ogg` files; the build only copies them. Sound made elsewhere goes in `audio/generated/`, which Bleepkit never touches: the theme (`theme.ogg`) is an ElevenLabs track, leveled to about -18 LUFS like the rest of the music, with its 50s intro played once and 50 to 110s looped (`SONGS` in `src/engine.ts`). A new sound also needs its name in `SFXN`
+in `src/engine.ts`. The owner dislikes bell-like and laser-like timbres in music, and constant beeps.
 
 ## Art
 
 Weapon and gear icons: `python3 scripts/icons.py add <image.png> <id>` imports upscaled pixel art (e.g.
-512x256 at 4x on transparency) as icon `<id>` and regenerates `src/icons.js`. `<id>` is the `WEAPONS` or
+512x256 at 4x on transparency) as icon `<id>` and regenerates `src/icons.ts`. `<id>` is the `WEAPONS` or
 `GEAR` key. Sources for the agent figure are in `art/doll/`.
 
 ## Conventions

@@ -1,7 +1,18 @@
+import { $, R, Rpick, Rr, angDiff, clamp, lerp } from './core';
+import { WORLD } from './world_head';
+import { pedPos, randomPed } from './layout';
+import { spawnP } from './models';
+import { findPath, sfx } from './engine';
+import { MISSIONS, SAVE, WEAPONS, store } from './campaign';
+import { MS, SKINS, agents, lastCombat, militia, mkCarAt, mkPerson, people, renderObjs, setObj, setTarget, spawnCiv, target, time } from './setup';
+import { alertNpc, enterTower, followPath, say, spawnCorp, squadCenter, updateEntering } from './sim';
+import { fmt } from './flow';
+import { renderPage } from './pages';
+
 /* ================================================================ mission scripts
    A contract can register SCRIPTS[id] = { setup(def, L), update(dt) } to add its own cast and timeline on top of
    the shared city setup (civilians, traffic, turrets). New contracts go here. */
-const SCRIPTS = {};
+export const SCRIPTS: any = {};
 MISSIONS.push(
   { id: 'warrens', code: '0419', title: 'The Warrens', region: 'Harrow Bay // the Warrens', world: 'city', level: 'warrens', weather: 'rain', reward: 16000, max: 4, need: 'varga', unlock: 'flamer',
     spot: 'boss', spotLabel: 'WIRE', targetMsg: 'TARGET: WIRE ODUYA // THE DEN, CENTRE OF THE WARRENS', killMsg: 'WIRE ODUYA IS DEAD', extractMsg: 'GET TO THE PICKUP LOT',
@@ -24,7 +35,7 @@ SCRIPTS.warrens = {
   setup(def, L) {
     for (const p of people) if (p.kind === 'civ') { p.color = Rpick([[0.22, 0.16, 0.1], [0.14, 0.15, 0.16], [0.25, 0.08, 0.06], [0.1, 0.16, 0.14], [0.2, 0.2, 0.12]]); }
     const D = WORLD.den;
-    target = ganger(D.boss[0], D.boss[1], 'uzi', { boss: true, hp: 220, maxHp: 220, mag: 50, color: [0.45, 0.08, 0.3], coat: 2, scale: 1.12, yaw: 0, postYaw: 0 });
+    setTarget(ganger(D.boss[0], D.boss[1], 'uzi', { boss: true, hp: 220, maxHp: 220, mag: 50, color: [0.45, 0.08, 0.3], coat: 2, scale: 1.12, yaw: 0, postYaw: 0 }));
     D.posts.forEach(([x, z], i) => ganger(x, z, i < 2 ? 'flamer' : i % 2 ? 'shotgun' : 'uzi', { yaw: Rr(-1, 1), postYaw: Rr(-1, 1) }));
     for (let i = 0; i < 12; i++) {
       const g = spawnCiv(); const w = Rpick(['uzi', 'shotgun', 'pistol', 'uzi']);
@@ -53,11 +64,12 @@ SCRIPTS.warrens = {
 const WALK_AT = 120, BOARD_WAIT = 16, RUSH_WAIT = 6;
 SCRIPTS.airfield = {
   setup(def, L) {
+    WORLD.nodes.find((n) => n.type === 'ctower').onHack = () => { if (MS.groundStop) return; MS.groundStop = 60; say('CONTROL TOWER // GROUND STOP ISSUED, VTOL HELD 60S', ''); };
     for (const p of people) if (p.kind === 'civ') { p.color = Rpick([[0.6, 0.3, 0.04], [0.5, 0.45, 0.04], [0.2, 0.2, 0.22]]); p.umb = 0; p.rim = [0, 0, 0]; }
     const [px, pz] = WORLD.pad;
     MS.vtol = mkCarAt('vtol', px, pz, Math.PI / 2, { color: [0.12, 0.12, 0.14], glow: [1, 0.3, 0.55], hp: 520, maxHp: 520, armor: { bullet: 0.12, shot: 0.1, beam: 0.45, blast: 1 } });
     const d = WORLD.door, sx = d.x + d.n[0] * 2.2, sz = d.z + d.n[1] * 2.2;
-    target = mkPerson({ kind: 'chairman', fac: 'corp', state: 'wait', x: sx, z: sz, yaw: Math.PI, hp: 90, maxHp: 90, color: [0.85, 0.85, 0.88], skin: SKINS[3], rim: [1, 0.3, 0.55], coat: 2, scale: 1.04 });
+    setTarget(mkPerson({ kind: 'chairman', fac: 'corp', state: 'wait', x: sx, z: sz, yaw: Math.PI, hp: 90, maxHp: 90, color: [0.85, 0.85, 0.88], skin: SKINS[3], rim: [1, 0.3, 0.55], coat: 2, scale: 1.04 }));
     for (const off of [[-1.5, 1.0], [1.5, 1.0]]) mkPerson({ kind: 'corp', fac: 'corp', state: 'escort', guard: target, goff: off, x: sx + off[0], z: sz + off[1], hp: 150, maxHp: 150, weapon: 'corprifle', mag: 99, color: [0.55, 0.55, 0.6], skin: [0.2, 0.2, 0.22], rim: [1, 0.3, 0.55], coat: 2, armed: 1, scale: 1.08 });
     for (const [dx, dz] of [[-24, -14], [24, -14], [-26, 16], [26, 16], [0, -22]]) mkPerson({ kind: 'corp', fac: 'corp', state: 'post', x: px + dx, z: pz + dz, postX: px + dx, postZ: pz + dz, yaw: Math.atan2(-dx, -dz), postYaw: Math.atan2(-dx, -dz), hp: 150, maxHp: 150, weapon: 'corprifle', mag: 99, color: [0.55, 0.55, 0.6], skin: [0.2, 0.2, 0.22], rim: [1, 0.3, 0.55], coat: 2, armed: 1, scale: 1.08 });
     const fuel = mkCarAt('truck', px + 8.5, pz + 5, 0, { color: [0.75, 0.6, 0.1], glow: [1, 0.6, 0.2], hp: 200, maxHp: 200 });
@@ -99,7 +111,7 @@ SCRIPTS.airfield = {
     if (MS.objs[0].text !== txt) { MS.objs[0].text = txt; renderObjs(); }
   },
 };
-function updateChairman(p, dt) {
+export function updateChairman(p, dt) {
   if (p.inCar) return;
   if (p.state === 'entering') return updateEntering(p, dt);
   const v = MS.vtol;
@@ -124,10 +136,10 @@ const TERR = {
   airfield: { name: 'Meridian airfield', pop: 35, r: [70, 10, 26, 46] },
 };
 const TAX_FAIR = 18;
-function terrOf(id) { SAVE.terr = SAVE.terr || {}; if (SAVE.done[id] && !SAVE.terr[id]) SAVE.terr[id] = { tax: 15, unrest: 0, revolt: false }; return SAVE.terr[id] || null; }
+export function terrOf(id) { SAVE.terr = SAVE.terr || {}; if (SAVE.done[id] && !SAVE.terr[id]) SAVE.terr[id] = { tax: 15, unrest: 0, revolt: false }; return SAVE.terr[id] || null; }
 const taxIncome = (id) => { const t = terrOf(id); return t && !t.revolt ? Math.round(TERR[id].pop * t.tax * 1.2) : 0; };
 /* called from settle(): collect taxes, move unrest, start or end revolts */
-function settleTerritory(res, add, rows) {
+export function settleTerritory(res, add, rows) {
   if (res === 'abort') return;
   const def = MS.def, t0 = terrOf(def.id);
   if (res === 'win' && t0 && t0.revolt) { t0.revolt = false; t0.unrest = 25; rows.push(['District retaken // ' + TERR[def.id].name, 0]); }
@@ -141,7 +153,7 @@ function settleTerritory(res, add, rows) {
   }
   if (inc) add('Territory taxes', inc);
 }
-function renderTerritory(P) {
+export function renderTerritory(P) {
   const owned = Object.keys(TERR).filter((id) => terrOf(id));
   const total = owned.reduce((s, id) => s + taxIncome(id), 0);
   P.innerHTML = '<h2 class="tt">Territory <small>Districts Kessel controls. Taxes are collected each time a team comes home.</small></h2><div class="split terr"><div class="box"><div class="bh">Harrow Bay</div><canvas id="tmap" class="tmap"></canvas>'
@@ -178,5 +190,5 @@ function drawTerrMap(cv) {
     g.fillStyle = 'rgba(201,211,223,0.5)'; g.fillText(t ? (t.revolt ? 'REVOLT' : t.tax + '% TAX') : open ? 'CONTRACT ' + m.code : '', px + pw / 2, py + ph / 2 + 9);
   }
 }
-const intelCost = (m) => Math.round(m.reward * 0.07 / 100) * 100;
-const hasIntel = (m) => !!(m.id === 'compound' || SAVE.done[m.id] || (SAVE.intel && SAVE.intel[m.id]));
+export const intelCost = (m) => Math.round(m.reward * 0.07 / 100) * 100;
+export const hasIntel = (m) => !!(m.id === 'compound' || SAVE.done[m.id] || (SAVE.intel && SAVE.intel[m.id]));

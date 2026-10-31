@@ -1,13 +1,19 @@
-let DISTRICT = 'downtown';
-function addLight(x, y, z, r, c, kind) { const L = { x, y, z, r, c, kind, off: 0 }; WORLD.lights.push(L); return L; }
-function solid(x0, y0, z0, x1, y1, z1, col, aux) { G.box(x0, y0, z0, x1, y1, z1, col, aux); WORLD.edges.push([x0, y0, z0, x1, y1, z1]); WORLD.solids.push([x0, y0, z0, x1, y1, z1]); }
+import { K, pick, ri, rng, rr } from './core';
+import { AB, BCOLS, DARK, G, NEONS, WORLD, blockCells } from './world_head';
+import { floodPole, tree } from './world_build';
+import { setGround } from './layout';
+
+export let DISTRICT = 'downtown';
+export function setDISTRICT(v: typeof DISTRICT) { return DISTRICT = v; }
+export function addLight(x, y, z, r, c, kind) { const L = { x, y, z, r, c, kind, off: 0 }; WORLD.lights.push(L); return L; }
+export function solid(x0, y0, z0, x1, y1, z1, col, aux) { G.box(x0, y0, z0, x1, y1, z1, col, aux); WORLD.edges.push([x0, y0, z0, x1, y1, z1]); WORLD.solids.push([x0, y0, z0, x1, y1, z1]); }
 function sbox(sd, a0, a1, o0, o1, y0, y1, col, aux) {
   if (sd.ax === 'x') { const xa = sd.s > 0 ? sd.c + o0 : sd.c - o1, xb = sd.s > 0 ? sd.c + o1 : sd.c - o0; G.box(xa, y0, a0, xb, y1, a1, col, aux); }
   else { const za = sd.s > 0 ? sd.c + o0 : sd.c - o1, zb = sd.s > 0 ? sd.c + o1 : sd.c - o0; G.box(a0, y0, za, a1, y1, zb, col, aux); }
 }
 const sidePt = (sd, a, o, y) => sd.ax === 'x' ? [sd.c + sd.s * o, y, a] : [a, y, sd.c + sd.s * o];
 
-function genBuilding(x0, z0, x1, z1, bx0, bz0, bx1, bz1, outer, hOver) {
+export function genBuilding(x0, z0, x1, z1, bx0, bz0, bx1, bz1, outer, hOver) {
   let h = hOver || (outer ? rr(12, 34) : (rng() < 0.45 ? rr(5, 9) : rng() < 0.85 ? rr(10, 16) : rr(18, 28)));
   h = Math.round(h);
   const br = rr(0.8, 1.2), base = pick(DISTRICT === 'campus' ? CAMPUS_COLS : BCOLS).map((v) => v * br);
@@ -85,7 +91,7 @@ function genBuilding(x0, z0, x1, z1, bx0, bz0, bx1, bz1, outer, hOver) {
     }
   }
 }
-function genPlaza(x0, z0, x1, z1) {
+export function genPlaza(x0, z0, x1, z1) {
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2 + 2; WORLD.padC = [cx, cz];
   G.box(cx - 5, 0.15, cz - 5, cx + 5, 0.22, cz + 5, [0.1, 0.11, 0.12], [K.PAD, 0, 0, 0]);
   for (const [dx, dz] of [[-6.5, -6.5], [6.5, -6.5], [-6.5, 6.5], [6.5, 6.5]]) {
@@ -96,7 +102,7 @@ function genPlaza(x0, z0, x1, z1) {
   genBuilding(x0 + 3, z0 + 3, x0 + 10, z0 + 7, x0 + 3, z0 + 3, x1 - 3, z1 - 3, false, 7);
   genBuilding(x1 - 10, z0 + 3, x1 - 3, z0 + 7, x0 + 3, z0 + 3, x1 - 3, z1 - 3, false, 10);
 }
-function genCorp(x0, z0, x1, z1) {
+export function genCorp(x0, z0, x1, z1) {
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2 - 2; WORLD.corpC = [cx, cz];
   let y = 0; const col = DISTRICT === 'campus' ? [0.16, 0.2, 0.24] : [0.09, 0.1, 0.13];
   const tiers = DISTRICT === 'docks' ? [[6.5, 11], [5.2, 19]] : DISTRICT === 'campus' ? [[6.5, 18], [5.2, 32], [4.2, 44]] : [[6.5, 30], [5.2, 52], [4.2, 72]];
@@ -121,7 +127,7 @@ function genCorp(x0, z0, x1, z1) {
     G.box(cx + dx - 0.25, 4.8, cz + dz - 0.25, cx + dx + 0.25, 5.2, cz + dz + 0.25, [0.25, 0.25, 0.28], AB);
   }
 }
-function genMarket(x0, z0) {
+export function genMarket(x0, z0) {
   for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
     if (i === 1 && j === 1) continue;
     const sx = x0 + 4 + i * 7, sz = z0 + 4 + j * 7, nc = pick(NEONS);
@@ -140,18 +146,18 @@ function genMarket(x0, z0) {
   blockCells(cx - 1.5, cz - 1.5, cx + 1.5, cz + 1.5);
 }
 const CAMPUS_COLS = [[0.3, 0.31, 0.33], [0.26, 0.28, 0.3], [0.33, 0.32, 0.3], [0.22, 0.25, 0.27]];
-const CONT_COLS = [[0.32, 0.12, 0.08], [0.12, 0.22, 0.24], [0.26, 0.26, 0.24], [0.3, 0.24, 0.1], [0.1, 0.16, 0.1], [0.08, 0.14, 0.28], [0.3, 0.16, 0.05]];
-function cbox(x, z, w, d, col, y0) {
+export const CONT_COLS = [[0.32, 0.12, 0.08], [0.12, 0.22, 0.24], [0.26, 0.26, 0.24], [0.3, 0.24, 0.1], [0.1, 0.16, 0.1], [0.08, 0.14, 0.28], [0.3, 0.16, 0.05]];
+export function cbox(x, z, w, d, col, y0?) {
   const h = 2.6; y0 = y0 || 0.15;
   solid(x - w / 2, y0, z - d / 2, x + w / 2, y0 + h, z + d / 2, col, AB);
   G.box(x - w / 2 - 0.02, y0 + 0.25, z - d / 2 + 0.25, x + w / 2 + 0.02, y0 + h - 0.25, z + d / 2 - 0.25, col.map((v) => v * 0.78), AB);
 }
-function floodTall(x, z, h, col) {
+export function floodTall(x, z, h, col) {
   G.box(x - 0.12, 0.15, z - 0.12, x + 0.12, h, z + 0.12, DARK, AB);
   G.box(x - 0.6, h, z - 0.3, x + 0.6, h + 0.35, z + 0.3, col, [K.LAMP, 3, 0, 0]);
   addLight(x, h - 0.5, z, 18, col.map((v) => v * 1.3), 'flood'); blockCells(x - 0.2, z - 0.2, x + 0.2, z + 0.2, true);
 }
-function genYard(x0, z0, x1, z1) {
+export function genYard(x0, z0, x1, z1) {
   for (let z = z0 + 4; z + 2.4 < z1 - 3; z += 5.6) for (let x = x0 + 3; x + 6 < x1 - 2; x += 6.8) {
     if (rng() < 0.24) continue;
     cbox(x + 3, z + 1.2, 6, 2.4, pick(CONT_COLS)); blockCells(x, z, x + 6, z + 2.4);
@@ -171,7 +177,7 @@ function genLab(x0, z0, x1, z1, outer) {
   });
   if (rng() < 0.5) { G.box(mx - 0.25, 0.15, mz - 0.25, mx + 0.25, 3.6, mz + 0.25, DARK, AB); G.box(mx - 0.35, 3.6, mz - 0.35, mx + 0.35, 3.8, mz + 0.35, [0.85, 0.95, 1], [K.LAMP, 2.4, 0, 0]); addLight(mx, 3.3, mz, 9, [0.8, 0.95, 1.1], 'street'); blockCells(mx - 0.3, mz - 0.3, mx + 0.3, mz + 0.3, true); }
 }
-function pole(x, z, dx, dz) {
+export function pole(x, z, dx, dz) {
   G.box(x - 0.09, 0.15, z - 0.09, x + 0.09, 5.6, z + 0.09, DARK, AB);
   const ax = x + dx * 1.3, az = z + dz * 1.3;
   G.box(Math.min(x, ax) - 0.06, 5.5, Math.min(z, az) - 0.06, Math.max(x, ax) + 0.06, 5.62, Math.max(z, az) + 0.06, DARK, AB);
@@ -181,11 +187,11 @@ function pole(x, z, dx, dz) {
 }
 
 /* ---------------------------------------------------------------- research campus (hand-planned block layout) */
-function lawn(x0, z0, x1, z1) { G.box(x0, 0.15, z0, x1, 0.17, z1, [1, 1, 1], [K.DIRT, 0, 0, 0]); setGround(x0, z0, x1, z1, 0.18); }
-function path(x0, z0, x1, z1) { G.box(x0, 0.15, z0, x1, 0.19, z1, [0.15, 0.15, 0.16], [K.WALK, 0, 0, 0]); setGround(x0, z0, x1, z1, 0.195); }
-function lampPost(x, z, col) { G.box(x - 0.08, 0.15, z - 0.08, x + 0.08, 3.4, z + 0.08, DARK, AB); G.box(x - 0.22, 3.4, z - 0.22, x + 0.22, 3.6, z + 0.22, col || [0.85, 0.95, 1], [K.LAMP, 2.4, 0, 0]); addLight(x, 3.1, z, 8, (col || [0.85, 0.95, 1]).map((v) => v * 1.1), 'street'); blockCells(x - 0.15, z - 0.15, x + 0.15, z + 0.15, true); }
-function bench(x, z, ax) { if (ax) G.box(x - 0.9, 0.15, z - 0.25, x + 0.9, 0.6, z + 0.25, [0.22, 0.16, 0.1], AB); else G.box(x - 0.25, 0.15, z - 0.9, x + 0.25, 0.6, z + 0.9, [0.22, 0.16, 0.1], AB); }
-function genPark(x0, z0, x1, z1, bi, bj) {
+export function lawn(x0, z0, x1, z1) { G.box(x0, 0.15, z0, x1, 0.17, z1, [1, 1, 1], [K.DIRT, 0, 0, 0]); setGround(x0, z0, x1, z1, 0.18); }
+export function path(x0, z0, x1, z1) { G.box(x0, 0.15, z0, x1, 0.19, z1, [0.15, 0.15, 0.16], [K.WALK, 0, 0, 0]); setGround(x0, z0, x1, z1, 0.195); }
+export function lampPost(x, z, col?) { G.box(x - 0.08, 0.15, z - 0.08, x + 0.08, 3.4, z + 0.08, DARK, AB); G.box(x - 0.22, 3.4, z - 0.22, x + 0.22, 3.6, z + 0.22, col || [0.85, 0.95, 1], [K.LAMP, 2.4, 0, 0]); addLight(x, 3.1, z, 8, (col || [0.85, 0.95, 1]).map((v) => v * 1.1), 'street'); blockCells(x - 0.15, z - 0.15, x + 0.15, z + 0.15, true); }
+export function bench(x, z, ax) { if (ax) G.box(x - 0.9, 0.15, z - 0.25, x + 0.9, 0.6, z + 0.25, [0.22, 0.16, 0.1], AB); else G.box(x - 0.25, 0.15, z - 0.9, x + 0.25, 0.6, z + 0.9, [0.22, 0.16, 0.1], AB); }
+export function genPark(x0, z0, x1, z1, bi, bj) {
   lawn(x0 + 1, z0 + 1, x1 - 1, z1 - 1);
   const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
   path(x0 + 1, mz - 0.9, x1 - 1, mz + 0.9); path(mx - 0.9, z0 + 1, mx + 0.9, z1 - 1);
@@ -200,13 +206,13 @@ function genPark(x0, z0, x1, z1, bi, bj) {
   bench(mx - 4, mz - 1.6, true); bench(mx + 4, mz + 1.6, true);
   lampPost(mx - 2.2, z0 + 3); lampPost(mx + 2.2, z1 - 3);
 }
-function genGreen(x0, z0, x1, z1) {
+export function genGreen(x0, z0, x1, z1) {
   lawn(x0 + 1, z0 + 1, x1 - 1, z1 - 1);
   path(x0 + 1, z0 + 1, x1 - 1, z0 + 2.6); path(x0 + 1, z1 - 2.6, x1 - 1, z1 - 1);
   for (let i = 0; i < 9; i++) tree(rr(x0 + 3, x1 - 3), rr(z0 + 4, z1 - 4), rr(0.75, 1.15));
   lampPost((x0 + x1) / 2, (z0 + z1) / 2);
 }
-function genCampusLab(x0, z0, x1, z1) {
+export function genCampusLab(x0, z0, x1, z1) {
   const ix0 = x0 + 3, iz0 = z0 + 3, ix1 = x1 - 3, iz1 = z1 - 3, h = Math.round(rr(8, 13)), w = 6.5, col = pick(CAMPUS_COLS), sd = rng();
   const open = Math.floor(rng() * 4);
   lawn(ix0 + w, iz0 + w, ix1 - w, iz1 - w); tree((ix0 + ix1) / 2, (iz0 + iz1) / 2, 0.9);
@@ -216,13 +222,13 @@ function genCampusLab(x0, z0, x1, z1) {
   if (open < 2) G.box(ix0 + 1, 2.4, sz - 0.08, ix1 - 1, 2.8, sz + 0.08, [0.85, 0.95, 1], [K.NEON, 1.4, sd, 0]); else G.box(sx - 0.08, 2.4, iz0 + 1, sx + 0.08, 2.8, iz1 - 1, [0.85, 0.95, 1], [K.NEON, 1.4, sd, 0]);
   addLight((ix0 + ix1) / 2, 3, (iz0 + iz1) / 2, 12, [0.8, 0.95, 1.1], 'neon');
 }
-function genDorm(x0, z0, x1, z1) {
+export function genDorm(x0, z0, x1, z1) {
   lawn(x0 + 1, z0 + 1, x1 - 1, z1 - 1);
   const mx = (x0 + x1) / 2;
   genBuilding(x0 + 3, z0 + 3, mx - 1.5, z1 - 3, x0 + 3, z0 + 3, x1 - 3, z1 - 3, false, rr(18, 26));
   genBuilding(mx + 1.5, z0 + 3, x1 - 3, z1 - 3, x0 + 3, z0 + 3, x1 - 3, z1 - 3, false, rr(14, 22));
 }
-function genParking(x0, z0, x1, z1) {
+export function genParking(x0, z0, x1, z1) {
   const ix0 = x0 + 3, iz0 = z0 + 3, ix1 = x1 - 3, iz1 = z1 - 3, col = [0.22, 0.22, 0.24];
   for (let lv = 1; lv <= 3; lv++) { const y = lv * 3; G.box(ix0, y - 0.3, iz0, ix1, y, iz1, col, AB); G.box(ix0, y, iz0, ix1, y + 0.9, iz0 + 0.2, col, AB); G.box(ix0, y, iz1 - 0.2, ix1, y + 0.9, iz1, col, AB); G.box(ix0 + 0.2, y - 0.45, iz0 + 0.3, ix1 - 0.2, y - 0.3, iz0 + 0.45, [1, 0.62, 0.18], [K.NEON, 0.9, 0.3, 0]); }
   for (let x = ix0; x <= ix1 + 0.01; x += (ix1 - ix0) / 4) for (let z = iz0; z <= iz1 + 0.01; z += (iz1 - iz0) / 3) { G.box(x - 0.3, 0, z - 0.3, x + 0.3, 9, z + 0.3, col.map((v) => v * 0.8), AB); blockCells(x - 0.35, z - 0.35, x + 0.35, z + 0.35); }
@@ -231,7 +237,7 @@ function genParking(x0, z0, x1, z1) {
   addLight((ix0 + ix1) / 2, 2.4, (iz0 + iz1) / 2, 12, [1.2, 0.85, 0.45], 'flood');
 }
 const CAR_COLS_S = [[0.6, 0.6, 0.62], [0.14, 0.14, 0.16], [0.45, 0.08, 0.08], [0.1, 0.2, 0.38], [0.18, 0.3, 0.26]];
-function genField(x0, z0, x1, z1) {
+export function genField(x0, z0, x1, z1) {
   lawn(x0 + 1, z0 + 1, x1 - 1, z1 - 1);
   const W = [0.8, 0.82, 0.84], a = x0 + 4, b = x1 - 4, c = z0 + 4, d = z1 - 4, mz = (z0 + z1) / 2;
   for (const [p, q, r, s] of [[a, c, b, c + 0.12], [a, d - 0.12, b, d], [a, c, a + 0.12, d], [b - 0.12, c, b, d], [a, mz - 0.06, b, mz + 0.06]]) G.box(p, 0.17, q, r, 0.18, s, W, AB);

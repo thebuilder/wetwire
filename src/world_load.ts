@@ -1,7 +1,16 @@
+import * as THREE from 'three';
+import { Geo, K, MAT, U } from './core';
+import { AB, G, GW, WORLD, blockCells, newWorld, openCells, opq, setG, setWORLD, walk } from './world_head';
+import { DISTRICT, setDISTRICT } from './city_fns';
+import { CX0, CX1, CZ0, CZ1, ROADX } from './world_build';
+import { LEVEL, LEVELS, PEDS, RN, buildLevel, inPlay, setLEVEL, setPEDS, setRN } from './layout';
+import { scene, trainCars } from './models';
+
 /* ================================================================ world loading */
 let cityMesh = null, worldObjs = [], vecStatic = [];
-const HK = { value: 0 };
-const vecScene = new THREE.Scene();
+export const HK = { value: 0 };
+export const SCAN = { img: null, R: 52, last: 0 };
+export const vecScene = new THREE.Scene();
 const vLineMat = (col, a) => new THREE.ShaderMaterial({ uniforms: { uHack: HK, uCol: { value: new THREE.Color(col) }, uA: { value: a } },
   vertexShader: 'void main(){ gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
   fragmentShader: 'uniform vec3 uCol; uniform float uA; uniform float uHack; void main(){ gl_FragColor = vec4(uCol, uA*uHack); }', transparent: true, depthWrite: false });
@@ -52,23 +61,23 @@ function gateGeo(w) {
   g.box(w * 0.5 - 0.6, 1.4, 0.05, w * 0.5 + 0.6, 1.8, 0.08, [1, 0.25, 0.2], [K.NEON, 1.2, 0.5, 0]);
   return g.geometry();
 }
-function setGateCells(gt) {
+export function setGateCells(gt) {
   if (gt.open > 0.5) openCells(gt.x0, gt.z - 0.5, gt.x1, gt.z + 0.5);
   else blockCells(gt.x0, gt.z - 0.5, gt.x1, gt.z + 0.5, true);
 }
-const WEATHER = {
+export const WEATHER = {
   rain: { name: 'Night // heavy rain', rain: 0.5, wet: 1, fog: [0.022, 0.03, 0.04], fogDen: 0.03, sky: [0.045, 0.055, 0.1], key: [0.09, 0.11, 0.19] },
   storm: { name: 'Night // rain', rain: 0.85, wet: 1, fog: [0.032, 0.028, 0.065], fogDen: 0.022, sky: [0.045, 0.055, 0.1], key: [0.09, 0.11, 0.19] },
   clear: { name: 'Night // dry, clear', rain: 0, wet: 0.15, fog: [0.03, 0.035, 0.06], fogDen: 0.016, sky: [0.05, 0.06, 0.1], key: [0.11, 0.12, 0.18] },
   smog: { name: 'Night // dry, smog', rain: 0, wet: 0.28, fog: [0.07, 0.042, 0.06], fogDen: 0.024, sky: [0.062, 0.052, 0.08], key: [0.13, 0.1, 0.12] },
 };
-let WX = WEATHER.smog;
-function loadWorld(id, wx) {
+export let WX: any = WEATHER.smog;
+export function loadWorld(id, wx) {
   const L = LEVELS[id] || LEVELS.downtown;
   WX = WEATHER[wx] || WEATHER.smog;
   walk.fill(1); opq.fill(0);
-  WORLD = newWorld(L.kind); G = new Geo(); LEVEL = L; RN = null; PEDS = null;
-  if (L.custom) { DISTRICT = L.style || L.kind; L.custom(L); for (let z = 0; z < GW; z++) for (let x = 0; x < GW; x++) if (!inPlay(x + 0.5, z + 0.5)) walk[z * GW + x] = 0; }
+  setWORLD(newWorld(L.kind)); setG(new Geo()); setLEVEL(L); setRN(null); setPEDS(null);
+  if (L.custom) { setDISTRICT(L.style || L.kind); L.custom(L); for (let z = 0; z < GW; z++) for (let x = 0; x < GW; x++) if (!inPlay(x + 0.5, z + 0.5)) walk[z * GW + x] = 0; }
   else buildLevel(L);
   U.uBounds.value.set(L.bounds[0], L.bounds[1], L.bounds[2], L.bounds[3]);
   SCAN.img = null;
@@ -82,6 +91,6 @@ function loadWorld(id, wx) {
   }
   for (const t of trainCars) t.visible = !!WORLD.rail;
   U.uPadC.value.set(WORLD.padC[0], WORLD.padC[1]);
-  U.uFog.value.set(...WX.fog); U.uFogDen.value = WX.fogDen; U.uSky.value.set(...WX.sky); U.uKey.value.set(...WX.key);
+  U.uFog.value.fromArray(WX.fog); U.uFogDen.value = WX.fogDen; U.uSky.value.fromArray(WX.sky); U.uKey.value.fromArray(WX.key);
   buildVecStatic();
 }

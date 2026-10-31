@@ -12,7 +12,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist'), shots = join(root, 'tests', 'shots');
 if (!existsSync(join(dist, 'index.html'))) { console.error('dist/index.html missing: run npm run build'); process.exit(1); }
 mkdirSync(shots, { recursive: true });
-const three = join(root, 'node_modules', 'three', 'build', 'three.min.js');
 
 const TYPES = { '.html': 'text/html', '.ogg': 'audio/ogg', '.js': 'text/javascript', '.png': 'image/png' };
 const server = createServer((req, res) => {
@@ -33,7 +32,6 @@ for (const name of names) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message + ' ' + (e.stack || '').split('\n').slice(1, 3).join(' ')));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text().slice(0, 400)); });
-  await page.route('https://cdn.jsdelivr.net/**', (r) => r.fulfill({ path: three, contentType: 'text/javascript' }));
   await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   const lines = [];
   const ctx = {

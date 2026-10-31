@@ -1,3 +1,10 @@
+import { K, TAU, lerp, pick, rng, rr } from './core';
+import { AB, DARK, G, NEONS, WORLD, addBarrel, blockCells } from './world_head';
+import { addLight, floodTall, lawn, solid } from './city_fns';
+import { fenceRun, floodPole, sandbags } from './world_build';
+import { AIR, FEATURES, FILLERS, RN, ZONES, defineLevel, rquad } from './layout';
+import { crate, drumCluster, genWarehouse, obox, opt, ridgeRoof } from './levels';
+
 /* ================================================================ more levels: the Warrens (shanty slum) and the Meridian airfield */
 
 /* ---------------------------------------------------------------- the Warrens: shacks, wires, a gang den */
@@ -58,7 +65,7 @@ FILLERS.warrens = (x0, z0, x1, z1, o) => {
 /* power lines and strings of lanterns sagging across the lanes */
 FEATURES.wires = (f) => {
   let lit = 0;
-  const ribbon = (ax, ay, az, bx, by, bz, col, aux) => { G.poly([[ax, ay, az], [bx, by, bz], [bx, by + 0.09, bz], [ax, ay + 0.09, az]], col, aux || AB, [(ax + bx) / 2 + 0.01, (ay + by) / 2 - 3, (az + bz) / 2 + 0.01]); };
+  const ribbon = (ax, ay, az, bx, by, bz, col, aux?) => { G.poly([[ax, ay, az], [bx, by, bz], [bx, by + 0.09, bz], [ax, ay + 0.09, az]], col, aux || AB, [(ax + bx) / 2 + 0.01, (ay + by) / 2 - 3, (az + bz) / 2 + 0.01]); };
   for (const e of RN.edges) {
     if (e.kind !== 'alley' && e.w > 9) continue;
     const A = RN.nodes[e.a], d = [Math.cos(e.th), Math.sin(e.th)], n = [-d[1], d[0]], h = e.w / 2 + 1.4;
@@ -137,7 +144,7 @@ defineLevel('warrens', {
 function plane(x, z, along, s, col) {
   // a parked jet: fuselage, wings, tail, engines. along: 'x' or 'z' nose direction axis
   const c = col || [0.72, 0.73, 0.76], L = 18 * s, Wg = 16 * s, f = 1.3 * s;
-  const B = (u0, y0, v0, u1, y1, v1, cc, aux) => along === 'x' ? G.box(x + u0, y0, z + v0, x + u1, y1, z + v1, cc, aux || AB) : G.box(x + v0, y0, z + u0, x + v1, y1, z + u1, cc, aux || AB);
+  const B = (u0, y0, v0, u1, y1, v1, cc, aux?) => along === 'x' ? G.box(x + u0, y0, z + v0, x + u1, y1, z + v1, cc, aux || AB) : G.box(x + v0, y0, z + u0, x + v1, y1, z + u1, cc, aux || AB);
   B(-L / 2, 1.2, -f, L / 2, 1.2 + 2 * f, f, c);
   B(L / 2, 1.5, -f * 0.7, L / 2 + 1.2 * s, 1.2 + 1.6 * f, f * 0.7, c);
   B(L / 2 - 0.2, 2.2 * s + 0.6, -f * 0.75, L / 2 + 0.6, 2.5 * s + 0.8, f * 0.75, [0.05, 0.08, 0.12]);
@@ -190,7 +197,7 @@ function genCtower(x0, z0, x1, z1) {
   G.prism(cx, cz, H + 3, H + 3.6, 9.4, 9.4, 7, 7, 8, [0.2, 0.21, 0.23], AB);
   G.box(cx - 0.1, H + 3.6, cz - 0.1, cx + 0.1, H + 7, cz + 0.1, DARK, AB); G.box(cx - 0.25, H + 7, cz - 0.25, cx + 0.25, H + 7.4, cz + 0.25, [1, 0.1, 0.08], [K.NEON, 3, 0.7, 0]);
   addLight(cx, H + 1.5, cz, 14, [0.5, 1.1, 1.2], 'neon'); WORLD.edges.push([cx - 4.5, H, cz - 4.5, cx + 4.5, H + 3.6, cz + 4.5]);
-  WORLD.nodes.push({ type: 'ctower', level: 'sec', x: cx, y: H + 1.5, z: cz, label: 'CONTROL TOWER', fx: 'GROUND STOP, DELAYS THE VTOL 60S', onHack: (n) => { if (MS.groundStop) return; MS.groundStop = 60; say('CONTROL TOWER // GROUND STOP ISSUED, VTOL HELD 60S', ''); } });
+  WORLD.nodes.push({ type: 'ctower', level: 'sec', x: cx, y: H + 1.5, z: cz, label: 'CONTROL TOWER', fx: 'GROUND STOP, DELAYS THE VTOL 60S' });
 }
 function genHangar(x0, z0, x1, z1, zn) {
   const col = [0.24, 0.25, 0.27], h = 9, open = zn.door || 'e';

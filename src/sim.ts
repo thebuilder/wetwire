@@ -1,5 +1,20 @@
+import { $, R, Rpick, Rr, TAU, U, angDiff, clamp, lerp } from './core';
+import { GW, WORLD, barrels, cellOk, opq } from './world_head';
+import { CX0, CX1, CZ0, CZ1, ROADX } from './world_build';
+import { LEVEL, PEDS, RN, groundY, nearestPed, pedPos } from './layout';
+import { parts, spawnP, tracer, tracers } from './models';
+import { setGateCells } from './world_load';
+import { camT, findPath, nearestNode, nearestOpen, roadRoute, setShake, sfx, shake } from './engine';
+import { GEAR, SAVE, WEAPONS, resDone } from './campaign';
+import { MS, SKINS, agents, beams, blackouts, cars, corpWaves, decals, dispatchT, driveTo, dyn, flyers, hackJob, heat, heatPeak, lastCombat, lastLoud, militia, missionT, mkCar, mkCarAt, mkPerson, moveMarks, people, pickNext, pickups, rockets, selected, setBlackouts, setCorpWaves, setDispatchT, setHackJob, setHeat, setHeatPeak, setLastCombat, setLastLoud, setObj, setSpotLogT, spotLogT, stats, target, time, train, turrets } from './setup';
+import { addFire, burnTick, flameShot, hurtBarrel, ignite, panic } from './chaos';
+import { SCRIPTS, updateChairman } from './missions';
+import { selAlive } from './commands';
+import { hudSquad } from './hud';
+import { addNoise } from './tactical';
+
 /* ================================================================ combat helpers */
-const group = (p) => p.fac === 'player' || p.fac === 'follower' ? 'P' : p.fac === 'law' ? 'L' : p.fac === 'corp' ? 'C' : 'N';
+export const group = (p) => p.fac === 'player' || p.fac === 'follower' ? 'P' : p.fac === 'law' ? 'L' : p.fac === 'corp' ? 'C' : 'N';
 function hostile(a, b) {
   const ga = group(a), gb = group(b);
   if (ga === gb || ga === 'N' || gb === 'N') return false;
@@ -7,7 +22,7 @@ function hostile(a, b) {
   if (ga === 'P') return !!b.alerted;
   return !!a.alerted;
 }
-function wallDist(x0, z0, dx, dz, max) {
+export function wallDist(x0, z0, dx, dz, max) {
   for (let t = 0.5; t < max; t += 0.3) { const x = x0 + dx * t, z = z0 + dz * t; if (x < 0 || z < 0 || x >= GW || z >= GW) return max; if (opq[Math.floor(z) * GW + Math.floor(x)]) return t; }
   return max;
 }
@@ -45,13 +60,13 @@ function trace(shooter, x0, z0, dx, dz, range, pierce) {
   const stop = hits.find((h) => h.c || h.tu || h.b);
   return stop ? { end: stop.t, hits: hits.filter((h) => h.t <= stop.t) } : { end: wall, hits };
 }
-function addDecal(x, z, s, col, ty) { decals.push({ x, z, s, col, ty: ty || 0, seed: R(), yaw: R() * TAU, y: groundY(x, z) + 0.03 + decals.length * 0.0004 }); if (decals.length > 96) decals.shift(); }
-function addDyn(x, y, z, r, c, life) { dyn.push({ x, y, z, r, c, life, max: life }); if (dyn.length > 40) dyn.shift(); }
-function addHeat(v) { if (WORLD.kind !== 'city') return; heat = clamp(heat + v, 0, 100); heatPeak = Math.max(heatPeak, heat); }
+function addDecal(x, z, s, col, ty?) { decals.push({ x, z, s, col, ty: ty || 0, seed: R(), yaw: R() * TAU, y: groundY(x, z) + 0.03 + decals.length * 0.0004 }); if (decals.length > 96) decals.shift(); }
+export function addDyn(x, y, z, r, c, life) { dyn.push({ x, y, z, r, c, life, max: life }); if (dyn.length > 40) dyn.shift(); }
+export function addHeat(v) { if (WORLD.kind !== 'city') return; setHeat(clamp(heat + v, 0, 100)); setHeatPeak(Math.max(heatPeak, heat)); }
 function hearShot(src, r, x, z) {
   if (!r) return;
   const g = group(src);
-  if (g === 'P') { lastLoud = time; stats.shots++; if (src.kind === 'agent' && time - (src.noiseT || -9) > 0.35) { src.noiseT = time; addNoise(x, z, r); } }
+  if (g === 'P') { setLastLoud(time); stats.shots++; if (src.kind === 'agent' && time - (src.noiseT || -9) > 0.35) { src.noiseT = time; addNoise(x, z, r); } }
   for (const p of people) {
     if (p.dead) continue;
     const d = Math.hypot(p.x - x, p.z - z); if (d > r) continue;
@@ -60,7 +75,7 @@ function hearShot(src, r, x, z) {
   }
   if (WORLD.kind === 'city' && g === 'P' && target && target.model && !target.wreck && Math.hypot(target.x - x, target.z - z) < r + 6) spookVarga();
 }
-function alertNpc(p, x, z, why) {
+export function alertNpc(p, x, z, why) {
   if (p.dead || p.fac === 'follower') return;
   p.lastKnown = [x, z];
   if (p.alerted) return;
@@ -73,11 +88,11 @@ function alertNpc(p, x, z, why) {
     if (!MS.firstAlert) { MS.firstAlert = time; say(why === 'body' ? 'A GUARD FOUND A BODY' : why === 'light' ? 'SEARCHLIGHT CONTACT' : why === 'heard' ? 'GUARDS HEARD GUNFIRE' : 'A GUARD SPOTTED THE SQUAD', 'warn'); }
   }
 }
-function hurt(p, dmg, src) {
+export function hurt(p, dmg, src) {
   if (p.dead) return;
-  if (p.kind === 'agent') { dmg *= p.d.armor; p.lastHit = time; lastCombat = time; }
+  if (p.kind === 'agent') { dmg *= p.d.armor; p.lastHit = time; setLastCombat(time); }
   p.hp -= dmg; p.flash = 0.12;
-  if (src && group(src) === 'P' && (p.fac === 'law' || p.fac === 'corp')) { lastCombat = time; if (!p.alerted) alertNpc(p, src.x, src.z, 'hit'); }
+  if (src && group(src) === 'P' && (p.fac === 'law' || p.fac === 'corp')) { setLastCombat(time); if (!p.alerted) alertNpc(p, src.x, src.z, 'hit'); }
   if (p.hp <= 0) kill(p, src);
   else if (p.fac === 'civ') { p.state = 'flee'; p.fx = src ? src.x : p.x; p.fz = src ? src.z : p.z; p.t = 8; }
 }
@@ -137,11 +152,11 @@ function targetDown() {
   say(MS.def.extractMsg || (MS.def.world === 'city' ? 'EXTRACT AT THE NE PLAZA' : 'GET EVERYONE BACK TO THE VAN'), 'warn');
   if (MS.def.world === 'city') U.uPad.value = 1;
 }
-function damageCar(c, dmg, src, type) {
+export function damageCar(c, dmg, src, type) {
   if (c.wreck) return;
   if (c.armor && !(c.armorOff > 0)) dmg *= c.armor[type || 'bullet'] ?? 1;
   c.hp -= dmg; c.flash = 0.1;
-  if (src && group(src) === 'P') lastCombat = time;
+  if (src && group(src) === 'P') setLastCombat(time);
   if (c === target) spookVarga();
   if (c === MS.jeep && target && target.inCar === c && src && group(src) === 'P') {}
   if (c.hp <= 0) destroyCar(c, src);
@@ -158,12 +173,12 @@ function destroyCar(c, src) {
   if (c === target && MS.vargaP && !MS.vargaP.inCar && !MS.vargaP.dead) { MS.vpanic = true; say('THE LIMO IS GONE // VARGA RUNS FOR THE TOWER DOOR', 'bad'); }
   if (src && group(src) === 'P') addHeat(c.driver === 'police' ? 8 : 4);
 }
-function explode(x, z, r, dmg, src, big) {
+export function explode(x, z, r, dmg, src, big) {
   for (let i = 0; i < (big ? 70 : 45); i++) { const a = R() * TAU, s = Rr(2, 9); spawnP(x, Rr(0.3, 1.5), z, Math.cos(a) * s, Rr(1, 7), Math.sin(a) * s, R() < 0.5 ? [3.2, 1.4, 0.35] : [3.4, 2.6, 1.0], Rr(0.35, 0.8), Rr(0.3, 0.7), 2, 2.5); }
   for (let i = 0; i < 30; i++) { const a = R() * TAU, s = Rr(0.5, 3); spawnP(x, Rr(0.5, 2), z, Math.cos(a) * s, Rr(1, 3), Math.sin(a) * s, [0.12, 0.09, 0.14], Rr(0.8, 1.6), Rr(1.2, 2.4), -0.5, 0.8); }
   for (let i = 0; i < 26; i++) { const a = R() * TAU, s = Rr(6, 16); spawnP(x, 0.8, z, Math.cos(a) * s, Rr(3, 9), Math.sin(a) * s, [4, 3, 1.5], 0.1, Rr(0.3, 0.8), 18, 0.5); }
   addDyn(x, 2.5, z, big ? 26 : 20, [6, 3.2, 1.2], 0.9);
-  shake = Math.max(shake, big ? 0.9 : 0.6);
+  setShake(Math.max(shake, big ? 0.9 : 0.6));
   addDecal(x, z, r * (big ? 1.25 : 1.05), [0.02, 0.02, 0.025], 1);
   sfx('explosion', x, z, big ? 1 : 0.85, big ? 0.85 : 1);
   for (const p of people) { if (p.dead || p.inCar) continue; const d = Math.hypot(p.x - x, p.z - z); if (d < r) hurt(p, dmg * Math.pow(1 - d / r, 0.7), src); }
@@ -174,7 +189,7 @@ function explode(x, z, r, dmg, src, big) {
   panic(x, z, big ? 32 : 22);
   for (const t of turrets) { if (t.dead) continue; const d = Math.hypot(t.x - x, t.z - z); if (d < r + 0.5) hurtTurret(t, dmg * (1 - d / (r + 0.5)), src); }
   hearShot(src || { x, z, fac: 'civ' }, 50, x, z);
-  if (src && group(src) === 'P') { lastLoud = time; lastCombat = time; }
+  if (src && group(src) === 'P') { setLastLoud(time); setLastCombat(time); }
 }
 function hurtTurret(t, dmg, src) {
   if (t.dead) return; t.hp -= dmg; t.flash = 0.1;
@@ -202,7 +217,7 @@ function litAt(x, z) {
   for (const t of WORLD.towers) { if (t.spotOn && Math.hypot(t.spot[0] - x, t.spot[1] - z) < 3.6) return true; }
   return false;
 }
-function fire(sh, wname, tx, tz, extraSpread) {
+function fire(sh, wname, tx, tz, extraSpread?) {
   const w = WEAPONS[wname];
   const yaw = Math.atan2(tx - sh.x, tz - sh.z);
   const sc = sh.scale || 1;
@@ -252,10 +267,10 @@ function fire(sh, wname, tx, tz, extraSpread) {
   }
   hearShot(sh, w.noise, sh.x, sh.z);
 }
-function agentWeapon(a) { const id = a.slots[a.cur]; return id ? WEAPONS[id] : null; }
+export function agentWeapon(a) { const id = a.slots[a.cur]; return id ? WEAPONS[id] : null; }
 function agentDrawn(a) { return !a.dead && !!a.slots[a.cur] && (time - a.lastShot < 5 || !!a.ftarget || (a.fpoint && time < a.fpointT) || a.reloadT > 0 || time - a.lastHit < 3); }
 function hasAmmo(a, id) { const w = WEAPONS[id]; if (!w) return false; if (w.energy != null) return true; const am = a.ammo[id]; return !!am && am.mag + am.res > 0; }
-function startReload(a) {
+export function startReload(a) {
   const id = a.slots[a.cur]; if (!id) return; const w = WEAPONS[id]; const am = a.ammo[id];
   if (!am || w.energy != null || am.mag >= w.mag || a.reloadT > 0) return;
   if (am.res <= 0) {
@@ -283,7 +298,7 @@ function agentFire(a, tx, tz) {
   const am = a.ammo[id]; if (am && am.mag <= 0) startReload(a);
   return true;
 }
-function npcFire(p, tx, tz, extra) {
+function npcFire(p, tx, tz, extra?) {
   const w = WEAPONS[p.weapon];
   if (p.reloadT > 0) return;
   if (w.mag && w.mag < 90) { if (p.mag <= 0) { p.reloadT = (w.reload || 1.5) * 1.3; p.mag = w.mag; return; } p.mag--; }
@@ -291,7 +306,7 @@ function npcFire(p, tx, tz, extra) {
 }
 
 /* ================================================================ log */
-function say(msg, cls) {
+export function say(msg, cls) {
   const el = document.createElement('div'); el.textContent = '> ' + msg; if (cls) el.className = cls;
   const log = $('#log'); log.appendChild(el);
   while (log.children.length > 5) log.removeChild(log.firstChild);
@@ -299,7 +314,7 @@ function say(msg, cls) {
 }
 
 /* ================================================================ simulation */
-function moveToward(p, tx, tz, spd, dt) {
+export function moveToward(p, tx, tz, spd, dt) {
   const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
   if (d < 0.05) return d;
   const st = Math.min(d, spd * dt), mx = dx / d * st, mz = dz / d * st;
@@ -338,7 +353,7 @@ function pushOutOfCars(p) {
   }
   return null;
 }
-function followPath(p, spd, dt) {
+export function followPath(p, spd, dt) {
   if (!p.path || !p.path.length) return false;
   const w = p.path[0], d = moveToward(p, w.x, w.z, spd, dt);
   if (d < 0.2) p.path.shift();
@@ -481,7 +496,7 @@ function updateAgent(a, dt) {
     if (dd > range) { a.aim = Math.max(0, a.aim - dt * 3); if (tgt && (!a.path || !a.path.length || a.repath < time)) { a.path = findPath(a.x, a.z, T.x, T.z); a.repath = time + 1; a.run = true; } if (!tgt) a.auto = null; return; }
     if (tgt && a.path && a.path.length && hasLOS(a, T)) a.path = null;
     a.yaw = Math.atan2(T.x - a.x, T.z - a.z); a.aim = 1;
-    if (a.cd <= 0 && hasLOS(a, T)) { if (agentFire(a, T.x, T.z)) { a.cd = 1 / w.rof; lastCombat = time; } }
+    if (a.cd <= 0 && hasLOS(a, T)) { if (agentFire(a, T.x, T.z)) { a.cd = 1 / w.rof; setLastCombat(time); } }
   } else a.aim = Math.max(0, a.aim - dt * 2);
 }
 function persuade(p) {
@@ -564,7 +579,7 @@ function perceive(p, dt) {
   if (who) { p.sus = Math.min(1, p.sus + best * dt); p.susAt = [who.x, who.z]; if (p.sus >= 1) alertNpc(p, who.x, who.z, 'seen'); }
   else p.sus = Math.max(0, p.sus - 0.2 * dt);
 }
-function updatePerson(p, dt) {
+export function updatePerson(p, dt) {
   if (p.flash > 0) p.flash -= dt;
   if (p.dead) { p.deadT = Math.min(1, p.deadT + dt * 3); return; }
   if (p.burnT > 0 && !p.inCar && burnTick(p, dt)) return;
@@ -643,7 +658,7 @@ function updateCourier(p, dt) {
   if (followPath(p, 3.9, dt)) { p.walk = 1.2; p.phase += dt * 3.9 * 2.4; }
   if (Math.hypot(p.x - tx, p.z - tz) < 2.2) enterTower(p, 'THE COURIER IS AT THE TOWER DOOR', 'THE COURIER GOT INSIDE WITH THE CASE // DATA LOST');
 }
-const towerDoor = () => [WORLD.corpC[0], WORLD.corpC[1] + 8.2];
+const towerDoor = (): [number, number] => [WORLD.corpC[0], WORLD.corpC[1] + 8.2];
 function updateVarga(dt) {
   const V = MS.vargaP, c = target; if (!V || V.dead || !c) return;
   if (MS.vphase === 'roam' && missionT > MS.stopAt && !MS.spooked && !c.wreck && !c.gone && c.stall <= 0) {
@@ -678,7 +693,7 @@ function updateExec(p, dt) {
   if (go(dx, dz, 1.4) < 0.8) { MS.waitT -= dt; p.yaw += angDiff(p.yaw, 0) * Math.min(1, dt * 3); }
 }
 /* walk through the tower's glass door: the door lights up, they step inside and the building hides them */
-function enterTower(p, atMsg, inMsg) {
+export function enterTower(p, atMsg, inMsg) {
   if (p.state === 'entering') return;
   const d = WORLD.door || { x: WORLD.corpC[0], z: WORLD.corpC[1] + 6.5, n: [0, 1] }, tx = -d.n[1], tz = d.n[0], o = clamp((p.x - d.x) * tx + (p.z - d.z) * tz, -1.2, 1.2);
   p.state = 'entering'; p.path = null; p.enterMsg = inMsg; p.enterI = 0;
@@ -686,7 +701,7 @@ function enterTower(p, atMsg, inMsg) {
   addDyn(d.x + d.n[0] * 0.7, 1.8, d.z + d.n[1] * 0.7, 9, [0.8, 2.2, 2.6], 1.6); sfx('door', d.x, d.z, 1);
   say(atMsg, 'bad');
 }
-function updateEntering(p, dt) {
+export function updateEntering(p, dt) {
   const t = p.enterPts[p.enterI], dx = t[0] - p.x, dz = t[1] - p.z, d = Math.hypot(dx, dz), sp = 2.6;
   if (p.enterI === 1 && R() < dt * 6 && WORLD.door) addDyn(WORLD.door.x + WORLD.door.n[0] * 0.5, 1.6, WORLD.door.z + WORLD.door.n[1] * 0.5, 6, [0.5, 1.6, 1.9], 0.25);
   if (d < 0.2) {
@@ -696,7 +711,7 @@ function updateEntering(p, dt) {
   p.x += dx / d * Math.min(d, sp * dt); p.z += dz / d * Math.min(d, sp * dt);
   p.yaw = Math.atan2(dx, dz); p.walk = 1; p.phase += dt * sp * 3; p.aim = 0;
 }
-function updateHostile(p, dt, skipColonel) {
+function updateHostile(p, dt, skipColonel?) {
   if (p.kind === 'colonel' && !skipColonel) return updateColonel(p, dt);
   if (p.state === 'entering') return updateEntering(p, dt);
   if (p.kind === 'chairman') return updateChairman(p, dt);
@@ -741,7 +756,7 @@ function updateHostile(p, dt, skipColonel) {
     if (p.cd <= 0) {
       const dark = darkAt(p.x, p.z) || (T.kind === 'agent' && !T.lit);
       npcFire(p, T.x, T.z, (dark ? 0.3 : 0) + (p.kind === 'militia' ? 0.05 : 0)); p.cd = 1 / w.rof * Rr(0.9, 1.4);
-      if (T.kind === 'agent' || T.fac === 'follower' || T.driver === 'player') lastCombat = time;
+      if (T.kind === 'agent' || T.fac === 'follower' || T.driver === 'player') setLastCombat(time);
     }
     return;
   }
@@ -772,7 +787,7 @@ function carBlockedAhead(c, hx, hz) {
   }
   return null;
 }
-function updateCar(c, dt) {
+export function updateCar(c, dt) {
   if (c.flash > 0) c.flash -= dt;
   if (c.armorOff > 0) c.armorOff -= dt;
   if (c.wreck) {
@@ -853,12 +868,12 @@ function policeArrive(c) {
   }
   sfx('door', c.x, c.z, 0.7);
 }
-function squadCenter() {
+export function squadCenter(): [number, number] {
   let x = 0, z = 0, n = 0;
   for (const a of agents) { if (a.dead) continue; x += a.inCar ? a.inCar.x : a.x; z += a.inCar ? a.inCar.z : a.z; n++; }
   return n ? [x / n, z / n] : [camT.x, camT.z];
 }
-function dispatchPolice(at) {
+export function dispatchPolice(at?) {
   if (!RN || !RN.exits.length) return;
   const sc = at || squadCenter();
   const far = RN.exits.filter((i) => Math.hypot(RN.nodes[i].x - sc[0], RN.nodes[i].z - sc[1]) > 55);
@@ -867,7 +882,7 @@ function dispatchPolice(at) {
   c.route = roadRoute(from, to); pickNext(c);
   say('HBPD DISPATCH // 2 OFFICERS INBOUND', 'warn');
 }
-function spawnCorp(n) {
+export function spawnCorp(n) {
   const [cx, cz] = WORLD.corpC;
   for (let i = 0; i < n; i++) {
     const sp = nearestOpen(cx + Rr(-3, 3), cz + 9, 4) || [cx, cz + 9];
@@ -876,7 +891,7 @@ function spawnCorp(n) {
   say('MERIDIAN SECURITY DEPLOYED // ' + n + ' OPERATIVES', 'bad');
   sfx('alarm', null, null, 0.5);
 }
-function spookVarga() {
+export function spookVarga() {
   if (MS.spooked || !target || !target.model || target.wreck || WORLD.kind !== 'city') return;
   if (MS.vargaP && !MS.vargaP.inCar && !MS.vargaP.dead) { if (!MS.vpanic) { MS.vpanic = true; say('VARGA IS SPOOKED // RUNNING BACK TO THE LIMO', 'bad'); } return; }
   if (MS.def.id === 'courier') {
@@ -896,7 +911,7 @@ function spookVarga() {
   pickNext(target);
   say('VARGA IS SPOOKED // RUNNING FOR THE SECTOR EDGE', 'bad');
 }
-function raiseAlarm() {
+export function raiseAlarm() {
   if (MS.alarm >= 2) return;
   MS.alarm = 2; sfx('alarm', null, null, 0.8);
   say('COMPOUND ALARM', 'bad');
@@ -915,9 +930,9 @@ function sendReinforcements() {
   };
   pickNext(t); say('MILITIA TRUCK ON THE NORTH ROAD', 'bad');
 }
-function updateDirector(dt) {
+export function updateDirector(dt) {
   for (const b of blackouts) b.t -= dt;
-  blackouts = blackouts.filter((b) => b.t > 0);
+  setBlackouts(blackouts.filter((b) => b.t > 0));
   for (const L of WORLD.lights) if (L.off > 0) L.off -= dt;
   for (const n of WORLD.nodes) if (n.cd > 0) n.cd -= dt;
   for (const it of pickups) { it.spin += dt; if (it.cool > 0) it.cool -= dt; }
@@ -926,16 +941,16 @@ function updateDirector(dt) {
   if (MS.def && SCRIPTS[MS.def.id]) SCRIPTS[MS.def.id].update(dt);
   if (WORLD.kind === 'city') {
     const pol = LEVEL.police !== false;
-    if (time - lastLoud > 10) heat = Math.max(0, heat - 0.45 * dt);
+    if (time - lastLoud > 10) setHeat(Math.max(0, heat - 0.45 * dt));
     const tier = heat < 20 ? 0 : heat < 50 ? 1 : heat < 85 ? 2 : 3;
     if (tier >= 1 && pol) {
-      dispatchT -= dt;
+      setDispatchT(dispatchT - (dt));
       const cops = people.filter((p) => !p.dead && p.kind === 'cop' && p.fac === 'law').length;
-      if (dispatchT <= 0) { if (cops < 3 + tier * 2) dispatchPolice(); dispatchT = tier === 1 ? 24 : tier === 2 ? 17 : 12; }
+      if (dispatchT <= 0) { if (cops < 3 + tier * 2) dispatchPolice(); setDispatchT(tier === 1 ? 24 : tier === 2 ? 17 : 12); }
     }
     if (tier >= 2 && pol) { for (const p of people) if (p.kind === 'cop' && !p.dead && !p.alerted && p.fac === 'law') { p.alerted = true; p.armed = 1; p.state = 'hunt'; } spookVarga(); }
-    if (tier >= 2 && pol && corpWaves < 1) { corpWaves = 1; spawnCorp(3); }
-    if (tier >= 3 && pol && corpWaves < 2) { corpWaves = 2; spawnCorp(4); }
+    if (tier >= 2 && pol && corpWaves < 1) { setCorpWaves(1); spawnCorp(3); }
+    if (tier >= 3 && pol && corpWaves < 2) { setCorpWaves(2); spawnCorp(4); }
     for (const c of WORLD.cams) {
       if (c.off > 0) { c.off -= dt; continue; }
       c.yaw = c.base + Math.sin(time * 0.45 + c.ph) * 0.75; c.spot = 0;
@@ -944,7 +959,7 @@ function updateDirector(dt) {
         const dx = a.x - c.x, dz = a.z - c.z, d = Math.hypot(dx, dz);
         if (d < 15 && Math.abs(angDiff(c.yaw, Math.atan2(dx, dz))) < 0.5 && hasLOS({ x: c.x, z: c.z }, a)) { c.spot = 1; break; }
       }
-      if (c.spot && pol) { addHeat(3.5 * dt); if (time - spotLogT > 8) { spotLogT = time; say('CCTV // ARMED SQUAD ON CAMERA', 'warn'); } }
+      if (c.spot && pol) { addHeat(3.5 * dt); if (time - spotLogT > 8) { setSpotLogT(time); say('CCTV // ARMED SQUAD ON CAMERA', 'warn'); } }
     }
   } else {
     if (MS.radioJam > 0) MS.radioJam -= dt;
@@ -981,7 +996,7 @@ function updateDirector(dt) {
   if (MS.def && MS.def.id === 'varga') updateVarga(dt);
   updateHacking(dt);
 }
-function updateTurret(t, dt) {
+export function updateTurret(t, dt) {
   if (t.dead) return; if (t.flash > 0) t.flash -= dt;
   if (t.friendly > 0) t.friendly -= dt;
   t.cd -= dt;
@@ -996,11 +1011,11 @@ function updateTurret(t, dt) {
     if (t.cd <= 0 && Math.abs(angDiff(t.yaw, Math.atan2(best.x - t.x, best.z - t.z))) < 0.2) {
       const sh = { x: t.x, z: t.z, y: 0.2, fac: t.friendly > 0 ? 'player' : 'corp', scale: 1, kind: 'turret' };
       fire(sh, 'turret', best.x, best.z); t.cd = 1 / WEAPONS.turret.rof;
-      if (best.fac === 'player' || best.fac === 'follower') lastCombat = time;
+      if (best.fac === 'player' || best.fac === 'follower') setLastCombat(time);
     }
   } else t.yaw += dt * 0.4;
 }
-function updateRockets(dt) {
+export function updateRockets(dt) {
   for (let i = rockets.length - 1; i >= 0; i--) {
     const r = rockets[i];
     const nx = r.x + r.vx * dt, nz = r.z + r.vz * dt;
@@ -1014,7 +1029,7 @@ function updateRockets(dt) {
     if (hit) { explode(r.x, r.z, WEAPONS.launcher.radius, WEAPONS.launcher.dmg, r.owner, false); rockets.splice(i, 1); }
   }
 }
-function updateParticles(dt) {
+export function updateParticles(dt) {
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i]; p.life -= dt;
     if (p.life <= 0) { parts[i] = parts[parts.length - 1]; parts.pop(); continue; }
@@ -1026,16 +1041,16 @@ function updateParticles(dt) {
   for (let i = moveMarks.length - 1; i >= 0; i--) { moveMarks[i].t -= dt; if (moveMarks[i].t <= 0) moveMarks.splice(i, 1); }
   for (const [x, z, y, big] of WORLD.vents) if (R() < dt * (big ? 6 : 2.2)) spawnP(x + Rr(-0.4, 0.4), y || 0.3, z + Rr(-0.4, 0.4), Rr(-0.2, 0.2) + (big ? 0.8 : 0), Rr(0.8, 1.6) * (big ? 1.6 : 1), Rr(-0.2, 0.2), big ? [0.09, 0.08, 0.1] : [0.07, 0.06, 0.09], Rr(0.8, 1.5) * (big ? 2.4 : 1), Rr(2, 3.5) * (big ? 2 : 1), -0.05, 0.3);
 }
-function updateAmbient(dt) {
+export function updateAmbient(dt) {
   for (const f of flyers) { f.pos += f.speed * dt; if (f.pos > GW + 70) f.pos = -70; if (f.pos < -70) f.pos = GW + 70; }
   if (WORLD.rail) { if (train.wait > 0) train.wait -= dt; else { train.z += train.speed * dt; if (train.z > GW + 90) { train.z = -90; train.wait = Rr(4, 10); } } }
 }
 
 /* ================================================================ hacking */
-const HLEVEL = { civil: { dur: 1.2, trace: 9, cost: 1 }, sec: { dur: 2.6, trace: 17, cost: 1 }, mil: { dur: 4.5, trace: 18, cost: 2 } };
-function deckOf(a) { return a && a.gear && GEAR[a.gear].charges ? GEAR[a.gear] : null; }
+export const HLEVEL = { civil: { dur: 1.2, trace: 9, cost: 1 }, sec: { dur: 2.6, trace: 17, cost: 1 }, mil: { dur: 4.5, trace: 18, cost: 2 } };
+export function deckOf(a) { return a && a.gear && GEAR[a.gear].charges ? GEAR[a.gear] : null; }
 function nodesInRange(u) { return u ? hackables().filter((n) => Math.hypot(n.x - u.x, n.z - u.z) <= u.r) : []; }
-function hackables() {
+export function hackables() {
   const list = WORLD.nodes.filter((n) => !(n.type === 'turret' && n.ref.dead));
   for (const c of cars) {
     if (c.wreck || c.gone || c.driver === 'player' || c === MS.van) continue;
@@ -1048,14 +1063,14 @@ function hackables() {
   }
   return list;
 }
-function connectedUplinkFor(n) { return WORLD.uplinks.find((u) => u.agent && !u.agent.dead && u.agent.link === u && Math.hypot(n.x - u.x, n.z - u.z) <= u.r); }
-function dropLink(u, burned) {
+export function connectedUplinkFor(n) { return WORLD.uplinks.find((u) => u.agent && !u.agent.dead && u.agent.link === u && Math.hypot(n.x - u.x, n.z - u.z) <= u.r); }
+export function dropLink(u, burned) {
   if (u.agent) { u.agent.link = null; u.agent.linkT = 0; }
-  if (hackJob && hackJob.u === u) hackJob = null;
+  if (hackJob && hackJob.u === u) setHackJob(null);
   u.agent = null;
   if (burned) u.burn = 40;
 }
-function orderJack(u) {
+export function orderJack(u) {
   if (u.burn > 0) { say(u.label + ' IS BURNED // ' + Math.ceil(u.burn) + 'S', 'warn'); return; }
   if (u.agent && !u.agent.dead) { say(u.label + ' ALREADY CONNECTED', ''); return; }
   let cand = selAlive().filter((a) => deckOf(a) && !a.inCar);
@@ -1067,14 +1082,14 @@ function orderJack(u) {
   a.jackTo = u; a.linkT = 0; a.path = findPath(a.x, a.z, u.x, u.z); a.ftarget = null; a.fpoint = null;
   say(a.name + ' MOVING TO ' + u.label, ''); sfx('ack', null, null, 1);
 }
-function startHack(n) {
+export function startHack(n) {
   const u = connectedUplinkFor(n);
   if (!u) { say('OUT OF RANGE // CONNECT A NEARER UPLINK', 'warn'); return; }
   const a = u.agent, deck = deckOf(a), L = HLEVEL[n.level];
   if ((n.cd || 0) > 0) { say(n.label + ' IS ALREADY COMPROMISED', 'warn'); return; }
   if (a.charges < L.cost) { say('DECK EMPTY // ' + L.cost + ' CHARGE' + (L.cost > 1 ? 'S' : '') + ' NEEDED', 'warn'); return; }
   if (hackJob) { say('DECK BUSY', 'warn'); return; }
-  hackJob = { n, u, a, t: 0, dur: L.dur * (1 + 0.4 * (n.patched || 0)) / a.d.hack, rate: L.trace * deck.trace * a.d.traceMul * (resDone('firmware') ? 0.8 : 1) * (1 + 0.5 * (n.patched || 0)) };
+  setHackJob({ n, u, a, t: 0, dur: L.dur * (1 + 0.4 * (n.patched || 0)) / a.d.hack, rate: L.trace * deck.trace * a.d.traceMul * (resDone('firmware') ? 0.8 : 1) * (1 + 0.5 * (n.patched || 0)) });
   sfx('hack', null, null, 0.6);
 }
 function updateHacking(dt) {
@@ -1085,7 +1100,7 @@ function updateHacking(dt) {
   }
   if (!hackJob) return;
   const j = hackJob;
-  if (j.a.dead || j.a.link !== j.u) { hackJob = null; return; }
+  if (j.a.dead || j.a.link !== j.u) { setHackJob(null); return; }
   j.t += dt; j.u.trace += j.rate * dt;
   if (j.u.trace >= 100) {
     const a = j.a; dropLink(j.u, true); a.sync = 0; a.crash = 6; j.u.trace = 60;
@@ -1094,7 +1109,7 @@ function updateHacking(dt) {
     else for (const p of people) if (!p.dead && p.fac === 'corp' && Math.hypot(p.x - j.u.x, p.z - j.u.z) < 45) alertNpc(p, j.u.x, j.u.z, 'trace');
     return;
   }
-  if (j.t >= j.dur) { hackJob = null; applyHack(j.n, j.a); }
+  if (j.t >= j.dur) { setHackJob(null); applyHack(j.n, j.a); }
 }
 function applyHack(n, a) {
   a.charges -= HLEVEL[n.level].cost; stats.hacks++;

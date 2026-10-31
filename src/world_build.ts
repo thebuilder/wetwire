@@ -1,7 +1,11 @@
+import { K, SEED, pick, rng, rr, setSEED } from './core';
+import { AB, DARK, G, M, WORLD, blockCells } from './world_head';
+import { DISTRICT, addLight, solid } from './city_fns';
+
 /* ---------------------------------------------------------------- compound (mission 1) */
-const CX0 = 60, CX1 = 166, CZ0 = 50, CZ1 = 150, ROADX = 113;
+export const CX0 = 60, CX1 = 166, CZ0 = 50, CZ1 = 150, ROADX = 113;
 function rroad(x0, z0, x1, z1, center, axis) { G.quad([x0, 0.02, z1], [x1, 0.02, z1], [x1, 0.02, z0], [x0, 0.02, z0], [0, 1, 0], [1, 1, 1], [K.RROAD, 0, center, axis]); }
-function fenceRun(ax, c, a0, a1) {
+export function fenceRun(ax, c, a0, a1) {
   // ax 'x': runs along x at z=c; ax 'z': runs along z at x=c
   const H = 2.6, T = 0.05;
   if (ax === 'x') { G.box(a0, 0, c - T, a1, H, c + T, [1, 1, 1], [K.FENCE, 0, 0, 0]); G.box(a0, H, c - 0.04, a1, H + 0.06, c + 0.04, [0.3, 0.3, 0.33], AB); G.box(a0, H + 0.1, c - 0.12, a1, H + 0.32, c + 0.12, [0.12, 0.12, 0.13], AB); blockCells(a0, c - 0.5, a1, c + 0.5, true); }
@@ -9,17 +13,17 @@ function fenceRun(ax, c, a0, a1) {
   for (let a = a0; a <= a1 + 0.01; a += 3) { if (ax === 'x') G.box(a - 0.07, 0, c - 0.07, a + 0.07, H + 0.4, c + 0.07, [0.22, 0.22, 0.24], AB); else G.box(c - 0.07, 0, a - 0.07, c + 0.07, H + 0.4, a + 0.07, [0.22, 0.22, 0.24], AB); }
   WORLD.edges.push(ax === 'x' ? [a0, 0, c, a1, H, c] : [c, 0, a0, c, H, a1]);
 }
-function floodPole(x, z, h, col) {
+export function floodPole(x, z, h, col) {
   G.box(x - 0.1, 0, z - 0.1, x + 0.1, h, z + 0.1, DARK, AB);
   G.box(x - 0.4, h, z - 0.25, x + 0.4, h + 0.3, z + 0.25, col, [K.LAMP, 3, 0, 0]);
   blockCells(x - 0.2, z - 0.2, x + 0.2, z + 0.2);
   return addLight(x, h - 0.4, z, 17, col.map((v) => v * 1.35), 'flood');
 }
 function container(x, z, w, d, col) { const h = 2.6; solid(x - w / 2, 0, z - d / 2, x + w / 2, h, z + d / 2, col, AB); G.box(x - w / 2 - 0.02, 0.2, z - d / 2 + 0.2, x + w / 2 + 0.02, h - 0.2, z + d / 2 - 0.2, col.map((v) => v * 0.8), AB); blockCells(x - w / 2, z - d / 2, x + w / 2, z + d / 2); }
-function sandbags(x0, z0, x1, z1) { G.box(x0, 0, z0, x1, 0.9, z1, [0.22, 0.2, 0.15], AB); blockCells(x0, z0, x1, z1, true); }
+export function sandbags(x0, z0, x1, z1) { G.box(x0, 0, z0, x1, 0.9, z1, [0.22, 0.2, 0.15], AB); blockCells(x0, z0, x1, z1, true); }
 /* campus and park trees are broadleaf, with the odd tall cypress; pines stay in the compound's woods */
-function tree(x, z, s) { if (DISTRICT === 'campus' || DISTRICT === 'downtown') { if (rng() < 0.82) return leafTree(x, z, s); return cypress(x, z, s); } pine(x, z, s); }
-function leafTree(x, z, s) {
+export function tree(x, z, s) { if (DISTRICT === 'campus' || DISTRICT === 'downtown') { if (rng() < 0.82) return leafTree(x, z, s); return cypress(x, z, s); } pine(x, z, s); }
+export function leafTree(x, z, s) {
   s *= rr(0.85, 1.15);
   G.box(x - 0.13 * s, 0.15, z - 0.13 * s, x + 0.13 * s, 1.9 * s, z + 0.13 * s, [0.1, 0.07, 0.05], AB);
   const r = rng(), c = r < 0.12 ? [0.16, 0.07, 0.1] : r < 0.22 ? [0.14, 0.12, 0.05] : [0.06 + rng() * 0.03, 0.11 + rng() * 0.04, 0.06];
@@ -37,8 +41,8 @@ function cypress(x, z, s) {
   G.prism(x, z, 3.2 * s, 5.4 * s, 1.3 * s, 1.3 * s, 0.1, 0.1, 6, c.map((v) => v * 1.2), AB);
   blockCells(x - 0.3, z - 0.3, x + 0.3, z + 0.3, true);
 }
-function hedge(x0, z0, x1, z1) { G.box(x0, 0.15, z0, x1, 1.0, z1, [0.035, 0.07, 0.04], AB); G.box(x0 + 0.05, 1.0, z0 + 0.05, x1 - 0.05, 1.12, z1 - 0.05, [0.045, 0.085, 0.05], AB); blockCells(x0, z0, x1, z1, true); }
-function flowerBed(x0, z0, x1, z1) {
+export function hedge(x0, z0, x1, z1) { G.box(x0, 0.15, z0, x1, 1.0, z1, [0.035, 0.07, 0.04], AB); G.box(x0 + 0.05, 1.0, z0 + 0.05, x1 - 0.05, 1.12, z1 - 0.05, [0.045, 0.085, 0.05], AB); blockCells(x0, z0, x1, z1, true); }
+export function flowerBed(x0, z0, x1, z1) {
   G.box(x0, 0.15, z0, x1, 0.35, z1, [0.2, 0.2, 0.21], AB); G.box(x0 + 0.15, 0.35, z0 + 0.15, x1 - 0.15, 0.4, z1 - 0.15, [0.06, 0.05, 0.04], AB);
   const cols = [[0.55, 0.12, 0.3], [0.6, 0.45, 0.1], [0.3, 0.12, 0.5]];
   for (let x = x0 + 0.4; x < x1 - 0.3; x += 0.6) for (let z = z0 + 0.4; z < z1 - 0.3; z += 0.6) if (rng() < 0.6) G.box(x - 0.12, 0.4, z - 0.12, x + 0.12, 0.6, z + 0.12, pick(cols), AB);
@@ -72,8 +76,8 @@ function watchtower(x, z, manned, base) {
   WORLD.towers.push(t);
   return t;
 }
-function genCompound() {
-  SEED = 7123;
+export function genCompound() {
+  setSEED(7123);
   const ext = 400;
   G.quad([-ext, 0, M + ext], [M + ext, 0, M + ext], [M + ext, 0, -ext], [-ext, 0, -ext], [0, 1, 0], [1, 1, 1], [K.DIRT, 0, 0, 0]);
   G.box(CX0, 0, CZ0, CX1, 0.03, CZ1, [0.11, 0.11, 0.12], [K.WALK, 0, 0, 0]);
@@ -85,7 +89,7 @@ function genCompound() {
   fenceRun('z', CX0, CZ0, 95); fenceRun('z', CX0, 100, CZ1);
   fenceRun('z', CX1, CZ0, CZ1);
   G.box(CX0 - 1.4, 0, 96, CX0 - 0.2, 0.12, 99.5, [1, 1, 1], [K.FENCE, 0, 0, 0]);
-  for (const [gz, name] of [[CZ0, 'N'], [CZ1, 'S']]) {
+  for (const [gz, name] of [[CZ0, 'N'], [CZ1, 'S']] as [number, string][]) {
     G.box(107.6, 0, gz - 0.3, 108.2, 3.4, gz + 0.3, [0.25, 0.25, 0.27], AB); G.box(117.8, 0, gz - 0.3, 118.4, 3.4, gz + 0.3, [0.25, 0.25, 0.27], AB);
     G.box(107.6, 3.2, gz - 0.2, 118.4, 3.4, gz + 0.2, [0.25, 0.25, 0.27], AB);
     G.box(110.5, 3.4, gz - 0.12, 115.5, 4.0, gz + 0.12, [1, 0.62, 0.18], [K.NEON, 1.4, 0.3, 1]);
@@ -140,7 +144,7 @@ function genCompound() {
   }
   // power poles along the road, with a junction box (uplinks)
   for (let z = -30; z < M + 30; z += 24) { if (z > CZ0 - 2 && z < CZ1 + 2) continue; G.box(ROADX + 6 - 0.12, 0, z - 0.12, ROADX + 6 + 0.12, 8, z + 0.12, [0.2, 0.17, 0.13], AB); G.box(ROADX + 4.8, 7.4, z - 0.08, ROADX + 7.2, 7.55, z + 0.08, [0.2, 0.17, 0.13], AB); blockCells(ROADX + 5.8, z - 0.2, ROADX + 6.2, z + 0.2); }
-  const ubox = (x, z, label, r) => {
+  const ubox = (x, z, label, r?) => {
     G.box(x - 0.35, 0, z - 0.25, x + 0.35, 1.5, z + 0.25, [0.24, 0.25, 0.27], AB);
     G.box(x - 0.2, 1.0, z + 0.25, x + 0.2, 1.25, z + 0.27, [0.3, 1, 0.85], [K.LAMP, 1.8, 0, 0]);
     blockCells(x - 0.35, z - 0.25, x + 0.35, z + 0.25);

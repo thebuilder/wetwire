@@ -1,4 +1,8 @@
-const scene = new THREE.Scene();
+import * as THREE from 'three';
+import { Geo, K, MAT, RAIN_FS, RAIN_VS, SPL_FS, SPL_VS, U, fxLMat, fxPMat } from './core';
+import { AB } from './world_head';
+
+export const scene = new THREE.Scene();
 /* ================================================================ dynamic models */
 function personGeo() {
   const g = new Geo(); const C = [1, 1, 1], PANTS = [0.07, 0.07, 0.09], BOOT = [0.035, 0.035, 0.04], HAIR = [0.05, 0.04, 0.04], GUN = [0.11, 0.11, 0.12];
@@ -124,9 +128,9 @@ function instanced(geo, mat, max, attrs) {
   for (const [name, size] of attrs) { const a = new THREE.InstancedBufferAttribute(new Float32Array(max * size), size); a.setUsage(THREE.DynamicDrawUsage); geo.setAttribute(name, a); }
   const m = new THREE.InstancedMesh(geo, mat, max); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0; scene.add(m); return m;
 }
-const PMAX = 340;
-const peopleMesh = instanced(personGeo(), MAT.people, PMAX, [['iColor', 3], ['iSkin', 3], ['iAnim', 4], ['iRim', 3], ['iMisc', 4]]);
-const CARM = {};
+export const PMAX = 340;
+export const peopleMesh = instanced(personGeo(), MAT.people, PMAX, [['iColor', 3], ['iSkin', 3], ['iAnim', 4], ['iRim', 3], ['iMisc', 4]]);
+export const CARM: any = {};
 for (const t of ['sedan', 'van', 'police', 'limo', 'spinner', 'jeep', 'truck']) CARM[t] = instanced(carGeo(t), MAT.tinted, t === 'jeep' || t === 'truck' ? 24 : 48, [['iColor', 3], ['iAnim', 4]]);
 function vtolGeo() {
   const g = new Geo(), W = [1, 1, 1];
@@ -141,9 +145,9 @@ function vtolGeo() {
   return g.geometry();
 }
 CARM.vtol = instanced(vtolGeo(), MAT.tinted, 2, [['iColor', 3], ['iAnim', 4]]);
-const itemMesh = instanced(itemGeo(), MAT.tinted, 40, [['iColor', 3], ['iAnim', 4]]);
-const shadowMesh = instanced(decalGeo(), MAT.tinted, 24, [['iColor', 3], ['iAnim', 4]]);
-const turretMesh = instanced(turretGeo(), MAT.tinted, 12, [['iColor', 3], ['iAnim', 4]]);
+export const itemMesh = instanced(itemGeo(), MAT.tinted, 40, [['iColor', 3], ['iAnim', 4]]);
+export const shadowMesh = instanced(decalGeo(), MAT.tinted, 24, [['iColor', 3], ['iAnim', 4]]);
+export const turretMesh = instanced(turretGeo(), MAT.tinted, 12, [['iColor', 3], ['iAnim', 4]]);
 /* fuel drums and tanks that blow up when shot */
 function barrelGeo(big) {
   const g = new Geo(), r = big ? 3.4 : 0.42, h = big ? 6.5 : 1.05;
@@ -153,34 +157,34 @@ function barrelGeo(big) {
   g.box(-r * 0.5, h * 0.42, r * 0.97, r * 0.5, h * 0.58, r * 1.02, [1, 1, 1], GLOW);
   return g.geometry();
 }
-const barrelMesh = instanced(barrelGeo(false), MAT.tinted, 96, [['iColor', 3], ['iAnim', 4]]);
-const tankMesh = instanced(barrelGeo(true), MAT.tinted, 24, [['iColor', 3], ['iAnim', 4]]);
-const decalMesh = instanced(decalGeo(), MAT.tinted, 96, [['iColor', 3], ['iAnim', 4]]);
-const trainCars = [];
+export const barrelMesh = instanced(barrelGeo(false), MAT.tinted, 96, [['iColor', 3], ['iAnim', 4]]);
+export const tankMesh = instanced(barrelGeo(true), MAT.tinted, 24, [['iColor', 3], ['iAnim', 4]]);
+export const decalMesh = instanced(decalGeo(), MAT.tinted, 96, [['iColor', 3], ['iAnim', 4]]);
+export const trainCars = [];
 { const tg = trainGeo(); for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(tg, MAT.dyn); m.frustumCulled = false; scene.add(m); trainCars.push(m); } }
 
 /* fx: particles, tracers, rain. Rain draws in its own pass after the reflections so puddles never mirror it */
-const fxScene = new THREE.Scene();
-const PART_MAX = 3000;
-const partGeo = new THREE.BufferGeometry();
-const partPos = new Float32Array(PART_MAX * 3), partCol = new Float32Array(PART_MAX * 3), partSize = new Float32Array(PART_MAX);
+export const fxScene = new THREE.Scene();
+export const PART_MAX = 3000;
+export const partGeo = new THREE.BufferGeometry();
+export const partPos = new Float32Array(PART_MAX * 3), partCol = new Float32Array(PART_MAX * 3), partSize = new Float32Array(PART_MAX);
 partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3).setUsage(THREE.DynamicDrawUsage));
 partGeo.setAttribute('aCol', new THREE.BufferAttribute(partCol, 3).setUsage(THREE.DynamicDrawUsage));
 partGeo.setAttribute('aSize', new THREE.BufferAttribute(partSize, 1).setUsage(THREE.DynamicDrawUsage));
 const partPoints = new THREE.Points(partGeo, fxPMat); partPoints.frustumCulled = false; scene.add(partPoints);
-const parts = [];
-function spawnP(x, y, z, vx, vy, vz, c, size, life, grav, drag) {
+export const parts = [];
+export function spawnP(x, y, z, vx, vy, vz, c, size, life, grav?, drag?) {
   if (parts.length >= PART_MAX) return;
   parts.push({ x, y, z, vx, vy, vz, c, size, life, max: life, grav: grav || 0, drag: drag || 0 });
 }
-const TR_MAX = 600;
-const trGeo = new THREE.BufferGeometry();
-const trPos = new Float32Array(TR_MAX * 6), trCol = new Float32Array(TR_MAX * 6);
+export const TR_MAX = 600;
+export const trGeo = new THREE.BufferGeometry();
+export const trPos = new Float32Array(TR_MAX * 6), trCol = new Float32Array(TR_MAX * 6);
 trGeo.setAttribute('position', new THREE.BufferAttribute(trPos, 3).setUsage(THREE.DynamicDrawUsage));
 trGeo.setAttribute('aCol', new THREE.BufferAttribute(trCol, 3).setUsage(THREE.DynamicDrawUsage));
 const trLines = new THREE.LineSegments(trGeo, fxLMat); trLines.frustumCulled = false; scene.add(trLines);
-const tracers = [];
-function tracer(x0, y0, z0, x1, y1, z1, c, life) { if (tracers.length < TR_MAX) tracers.push({ x0, y0, z0, x1, y1, z1, c, life, max: life }); }
+export const tracers = [];
+export function tracer(x0, y0, z0, x1, y1, z1, c, life) { if (tracers.length < TR_MAX) tracers.push({ x0, y0, z0, x1, y1, z1, c, life, max: life }); }
 {
   const RN = 2600, seeds = new Float32Array(RN * 2 * 4), pos = new Float32Array(RN * 2 * 3);
   for (let i = 0; i < RN; i++) { const s = [Math.random(), Math.random(), Math.random(), Math.random()]; for (let k = 0; k < 2; k++) seeds.set(s, (i * 2 + k) * 4); }
